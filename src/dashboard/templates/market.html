@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} - Market Intelligence{% endblock %}
+{% block page_title %}Market Intelligence{% endblock %}
+
+{% block content %}
+
+<!-- Row 1: Status Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <!-- Regime -->
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Regime</span>
+            <span class="info-tip"><span class="tip-content">Current macro regime derived from yield curve shape, credit spreads, and volatility levels. Risk-On, Risk-Off, or Crisis.</span></span>
+        </div>
+        <div id="regime-display" style="display:flex;align-items:center;gap:8px;">
+            <div class="skeleton" style="height:24px;width:120px;"></div>
+        </div>
+    </div>
+
+    <!-- Signal Direction -->
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Signal Direction</span>
+            <span class="info-tip"><span class="tip-content">Aggregate directional signal from the Signal Council. LONG favors risk assets, SHORT favors defensive positioning.</span></span>
+        </div>
+        <div id="signal-display" style="font-size:20px;font-weight:600;color:#52525b;">--</div>
+    </div>
+
+    <!-- 2s10s Spread -->
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">2s10s Spread</span>
+            <span class="info-tip"><span class="tip-content">Difference between 10-year and 2-year Treasury yields. Negative values (inversion) historically signal recession risk.</span></span>
+        </div>
+        <div id="spread-2s10s">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+
+    <!-- HY OAS -->
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">HY OAS</span>
+            <span class="info-tip"><span class="tip-content">High-Yield Option-Adjusted Spread. Measures credit risk premium over Treasuries. Widening spreads signal rising default risk.</span></span>
+        </div>
+        <div id="hy-oas-display">
+            <div class="skeleton" style="height:24px;width:140px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="card">
+        <p class="section-hdr" style="margin-bottom:12px;">Yield Curve</p>
+        <div id="curve-chart" style="width:100%;height:280px;"></div>
+    </div>
+    <div class="card">
+        <p class="section-hdr" style="margin-bottom:12px;">Credit Spreads</p>
+        <div id="spread-chart" style="width:100%;height:280px;"></div>
+    </div>
+</div>
+
+<!-- Row 3: Signal Council -->
+<div class="card mb-6">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <p class="section-hdr" style="margin:0;">Signal Council</p>
+        <button id="btn-council" class="btn-primary">Run Analysis</button>
+    </div>
+    <div id="council-output" style="font-size:13px;color:#a1a1aa;">
+        <p style="color:#52525b;">Click "Run Analysis" to score current market conditions.</p>
+    </div>
+</div>
+
+<!-- Row 4: News & Reddit -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <!-- News & Sentiment -->
+    <div class="card">
+        <p class="section-hdr" style="margin-bottom:12px;">News &amp; Sentiment</p>
+        <div id="news-feed">
+            <div class="skeleton" style="height:14px;width:100%;margin-bottom:10px;"></div>
+            <div class="skeleton" style="height:14px;width:90%;margin-bottom:10px;"></div>
+            <div class="skeleton" style="height:14px;width:95%;margin-bottom:10px;"></div>
+            <div class="skeleton" style="height:14px;width:85%;"></div>
+        </div>
+    </div>
+
+    <!-- Reddit Ticker Buzz -->
+    <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <p class="section-hdr" style="margin:0;">Reddit Ticker Buzz</p>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <select id="reddit-sub"
+                        style="background:#09090b;color:#a1a1aa;font-size:12px;border:1px solid #27272a;border-radius:8px;padding:5px 10px;outline:none;font-family:inherit;"
+                        onfocus="this.style.borderColor='#3f3f46'" onblur="this.style.borderColor='#27272a'">
+                    <option value="wallstreetbets">r/wallstreetbets</option>
+                    <option value="stocks">r/stocks</option>
+                    <option value="investing">r/investing</option>
+                    <option value="options">r/options</option>
+                </select>
+                <button id="btn-reddit-refresh" class="btn-ghost">Refresh</button>
+            </div>
+        </div>
+        <div id="reddit-chart" style="width:100%;height:280px;"></div>
+    </div>
+</div>
+
+<!-- Row 5: Ticker Lookup -->
+<div class="card">
+    <p class="section-hdr" style="margin-bottom:12px;">Ticker Lookup</p>
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <input id="ticker-input" type="text" placeholder="Enter ticker (e.g. AAPL, TSLA, TLT)"
+               style="flex:1;background:#09090b;color:#fafafa;border:1px solid #27272a;border-radius:8px;padding:8px 14px;font-size:13px;outline:none;font-family:inherit;"
+               onfocus="this.style.borderColor='#3f3f46'" onblur="this.style.borderColor='#27272a'"
+               onkeydown="if(event.key==='Enter') lookupTicker()">
+        <button onclick="lookupTicker()" class="btn-primary">Search</button>
+    </div>
+    <div id="ticker-result" style="font-size:13px;color:#52525b;"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadRegime() {
+    try {
+        const res = await fetch('/api/regime/current');
+        const data = await res.json();
+        const el = document.getElementById('regime-display');
+        if (data.regime) {
+            const label = data.regime.replace(/_/g, ' ').toUpperCase();
+            const colorMap = { risk_on: '#22c55e', risk_off: '#f59e0b', crisis: '#ef4444' };
+            const c = colorMap[data.regime] || '#fafafa';
+            el.innerHTML = '<span class="live-dot"></span><span class="metric" style="color:' + c + '">' + label + '</span>';
+        } else {
+            el.innerHTML = '<span class="metric" style="color:#52525b;">Unavailable</span>';
+        }
+    } catch (e) {
+        document.getElementById('regime-display').innerHTML = '<span class="metric" style="color:#52525b;">Unavailable</span>';
+    }
+}
+
+async function loadCurve() {
+    try {
+        const res = await fetch('/api/curve/current');
+        const data = await res.json();
+        if (data.observed_yields) {
+            const labels = Object.keys(data.observed_yields);
+            const observed = Object.values(data.observed_yields);
+
+            const spread = data.metrics?.spread_2s10s;
+            if (spread !== undefined) {
+                const el = document.getElementById('spread-2s10s');
+                const c = spread < 0 ? '#ef4444' : '#22c55e';
+                el.innerHTML = '<span class="metric" style="color:' + c + '">' + spread.toFixed(2) + '%</span>';
+            }
+
+            Plotly.newPlot('curve-chart', [{
+                x: labels, y: observed,
+                type: 'scatter', mode: 'lines+markers',
+                name: 'Observed',
+                line: { color: '#3b82f6', width: 2 },
+                marker: { size: 6 },
+            }], {
+                ...DARK_LAYOUT,
+                yaxis: { ...DARK_LAYOUT.yaxis, title: 'Yield (%)' },
+                margin: { t: 10, r: 20, b: 40, l: 50 },
+            }, PLOTLY_CONFIG);
+        }
+    } catch (e) {
+        document.getElementById('curve-chart').innerHTML = '<p style="color:#ef4444;font-size:13px;padding:16px;">Failed to load curve</p>';
+    }
+}
+
+async function loadSpreads() {
+    try {
+        const res = await fetch('/api/curve/spreads');
+        const data = await res.json();
+        if (data.spreads) {
+            const s = data.spreads;
+            const el = document.getElementById('hy-oas-display');
+            el.innerHTML = '<span class="metric" style="color:#fafafa;">' + s.hy_oas.toFixed(2) + '</span>' +
+                           '<span style="font-size:12px;color:#71717a;margin-left:6px;">z: ' + s.hy_z_score + '</span>';
+
+            Plotly.newPlot('spread-chart', [{
+                x: ['IG OAS', 'HY OAS'],
+                y: [s.ig_oas, s.hy_oas],
+                type: 'bar',
+                marker: { color: ['#3b82f6', '#ef4444'] },
+                text: [s.ig_oas.toFixed(2) + '%', s.hy_oas.toFixed(2) + '%'],
+                textposition: 'outside',
+                textfont: { color: '#a1a1aa' },
+            }], {
+                ...DARK_LAYOUT,
+                yaxis: { ...DARK_LAYOUT.yaxis, title: 'Spread (%)' },
+                margin: { t: 30, r: 20, b: 40, l: 50 },
+            }, PLOTLY_CONFIG);
+        }
+    } catch (e) {
+        document.getElementById('spread-chart').innerHTML = '<p style="color:#ef4444;font-size:13px;padding:16px;">Failed to load spreads</p>';
+    }
+}
+
+document.getElementById('btn-council').addEventListener('click', async function() {
+    const btn = this;
+    const output = document.getElementById('council-output');
+    btn.disabled = true; btn.textContent = 'Running...';
+    output.innerHTML = '<div class="skeleton" style="height:14px;width:60%;margin-bottom:10px;"></div><div class="skeleton" style="height:14px;width:45%;"></div>';
+
+    try {
+        const res = await fetch('/api/council/run', { method: 'POST' });
+        const data = await res.json();
+        if (data.council_result) {
+            const r = data.council_result;
+            const dirBadge = bgForDirection(r.direction);
+
+            // Update signal card
+            document.getElementById('signal-display').innerHTML = '<span class="' + dirBadge + '" style="font-size:13px;padding:3px 12px;">' + r.direction + '</span>';
+
+            // Build 2x2 analyst grid
+            let html = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 fade-in">';
+            for (const [name, op] of Object.entries(r.opinions)) {
+                const aBadge = bgForDirection(op.direction);
+                const convPct = Math.min(Math.round((op.conviction || 0) * 100), 100);
+                html += '<div class="card-sm">' +
+                    '<p style="font-size:11px;font-weight:500;color:#52525b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">' + name.replace(/_/g, ' ') + '</p>' +
+                    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span class="' + aBadge + '">' + op.direction + '</span><span style="color:#71717a;font-size:12px;">' + op.conviction + '</span></div>' +
+                    '<div style="height:3px;background:#27272a;border-radius:2px;margin-bottom:10px;overflow:hidden;"><div style="height:100%;width:' + convPct + '%;background:#3b82f6;border-radius:2px;transition:width .3s;"></div></div>' +
+                    '<p style="font-size:12px;color:#52525b;line-height:1.5;">' + op.reasoning + '</p>' +
+                '</div>';
+            }
+            html += '</div>';
+
+            // Final signal bar
+            html += '<div class="card-sm" style="margin-top:16px;display:flex;align-items:center;gap:12px;">' +
+                '<span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.06em;">Final Signal</span>' +
+                '<span class="' + dirBadge + '" style="font-size:13px;padding:3px 12px;">' + r.direction + '</span>' +
+                '<span style="color:#71717a;font-size:13px;">conviction ' + r.conviction + '</span>' +
+            '</div>';
+
+            output.innerHTML = html;
+        } else {
+            output.innerHTML = '<p style="color:#ef4444;">Error: ' + JSON.stringify(data) + '</p>';
+        }
+    } catch (e) {
+        output.innerHTML = '<p style="color:#ef4444;">Request failed: ' + e.message + '</p>';
+    }
+    btn.disabled = false; btn.textContent = 'Run Analysis';
+});
+
+async function loadNews() {
+    try {
+        const res = await fetch('/api/sentiment/news');
+        const data = await res.json();
+        if (data.articles && data.articles.length > 0) {
+            let html = '<div style="overflow-y:auto;max-height:320px;"><table style="width:100%;font-size:13px;border-collapse:collapse;">';
+            html += '<thead><tr style="border-bottom:1px solid #27272a;">';
+            html += '<th style="text-align:left;padding:8px 8px 8px 0;font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Title</th>';
+            html += '<th style="text-align:left;padding:8px;font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;width:70px;">Source</th>';
+            html += '<th style="text-align:left;padding:8px 0 8px 8px;font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;width:90px;">Sentiment</th>';
+            html += '</tr></thead><tbody>';
+            for (const a of data.articles.slice(0, 20)) {
+                const label = a.sentiment_label || 'neutral';
+                const badgeCls = label === 'positive' ? 'badge-green' : label === 'negative' ? 'badge-red' : 'badge-amber';
+                html += '<tr style="border-bottom:1px solid rgba(39,39,42,.4);">' +
+                    '<td style="padding:8px 8px 8px 0;color:#d4d4d8;">' + (a.title || '--') + '</td>' +
+                    '<td style="padding:8px;color:#52525b;font-size:11px;">' + (a.source || '--') + '</td>' +
+                    '<td style="padding:8px 0 8px 8px;"><span class="' + badgeCls + '">' + label + '</span></td>' +
+                '</tr>';
+            }
+            html += '</tbody></table></div>';
+            document.getElementById('news-feed').innerHTML = html;
+        } else {
+            document.getElementById('news-feed').innerHTML = '<p style="color:#52525b;font-size:13px;">No news available</p>';
+        }
+    } catch (e) {
+        document.getElementById('news-feed').innerHTML = '<p style="color:#ef4444;font-size:13px;">Failed to load news</p>';
+    }
+}
+
+async function loadReddit(subreddit) {
+    subreddit = subreddit || document.getElementById('reddit-sub').value || 'wallstreetbets';
+    document.getElementById('reddit-chart').innerHTML = '';
+    try {
+        const res = await fetch('/api/sentiment/reddit?subreddit=' + subreddit + '&limit=20');
+        const data = await res.json();
+        const buzz = data.buzz || [];
+        if (buzz.length > 0) {
+            const top = buzz.slice(0, 12);
+            Plotly.newPlot('reddit-chart', [{
+                y: top.map(t => t.ticker),
+                x: top.map(t => t.mentions || 0),
+                type: 'bar',
+                orientation: 'h',
+                marker: { color: '#3b82f6' },
+                text: top.map(t => t.mentions || 0),
+                textposition: 'outside',
+                textfont: { color: '#a1a1aa' },
+            }], {
+                ...DARK_LAYOUT,
+                xaxis: { ...DARK_LAYOUT.xaxis, title: 'Mentions' },
+                yaxis: { ...DARK_LAYOUT.yaxis, autorange: 'reversed' },
+                margin: { t: 10, r: 40, b: 40, l: 60 },
+            }, PLOTLY_CONFIG);
+        } else {
+            document.getElementById('reddit-chart').innerHTML = '<p style="color:#52525b;font-size:13px;padding:16px;">No ticker buzz data for r/' + subreddit + '</p>';
+        }
+    } catch (e) {
+        document.getElementById('reddit-chart').innerHTML = '<p style="color:#ef4444;font-size:13px;padding:16px;">Failed to load Reddit data</p>';
+    }
+}
+
+// Reddit subreddit switcher
+document.getElementById('btn-reddit-refresh').addEventListener('click', () => loadReddit());
+document.getElementById('reddit-sub').addEventListener('change', () => loadReddit());
+
+// --- Ticker Lookup ---
+async function lookupTicker() {
+    const ticker = document.getElementById('ticker-input').value.trim().toUpperCase();
+    const result = document.getElementById('ticker-result');
+    if (!ticker) { result.innerHTML = '<p style="color:#71717a;">Enter a ticker symbol</p>'; return; }
+
+    result.innerHTML = '<div class="skeleton" style="height:16px;width:200px;"></div>';
+
+    try {
+        const priceRes = await fetch('/api/backtest/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ strategy: 'momentum', lookback: 63, tickers: [ticker], transaction_cost_bps: 5 })
+        });
+        const priceData = await priceRes.json();
+
+        let html = '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 fade-in">';
+
+        if (priceData.metrics) {
+            const m = priceData.metrics;
+            html += '<div class="card-sm">' +
+                '<p class="section-hdr" style="margin-bottom:12px;">' + ticker + ' -- Momentum Analysis (63d)</p>' +
+                '<div class="grid grid-cols-3 gap-4">';
+
+            const items = [
+                { label: 'Annual Return', val: ((m.annual_return || 0) * 100).toFixed(1) + '%', pos: m.annual_return >= 0 },
+                { label: 'Sharpe', val: (m.sharpe || 0).toFixed(2), pos: true },
+                { label: 'Max Drawdown', val: ((m.max_drawdown || 0) * 100).toFixed(1) + '%', pos: false },
+                { label: 'Volatility', val: ((m.annual_vol || 0) * 100).toFixed(1) + '%', pos: true },
+                { label: 'Win Rate', val: ((m.win_rate || 0) * 100).toFixed(1) + '%', pos: true },
+                { label: 'Total Return', val: ((m.total_return || 0) * 100).toFixed(1) + '%', pos: m.total_return >= 0 },
+            ];
+            for (const it of items) {
+                const cls = it.pos ? 'metric-positive' : 'metric-negative';
+                html += '<div>' +
+                    '<p style="font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">' + it.label + '</p>' +
+                    '<p class="metric ' + cls + '" style="font-size:16px;">' + it.val + '</p>' +
+                '</div>';
+            }
+            html += '</div></div>';
+        }
+
+        if (priceData.cumulative_returns && priceData.cumulative_returns.length > 0) {
+            html += '<div class="card-sm">' +
+                '<p class="section-hdr" style="margin-bottom:12px;">' + ticker + ' -- Cumulative Return</p>' +
+                '<div id="ticker-chart" style="width:100%;height:200px;"></div>' +
+            '</div>';
+        }
+
+        html += '</div>';
+        result.innerHTML = html;
+
+        if (priceData.cumulative_returns && priceData.cumulative_returns.length > 0) {
+            const dates = priceData.cumulative_returns.map(d => d.date);
+            const values = priceData.cumulative_returns.map(d => d.value);
+            Plotly.newPlot('ticker-chart', [{
+                x: dates, y: values,
+                type: 'scatter', mode: 'lines',
+                line: { color: values[values.length-1] >= 1 ? '#22c55e' : '#ef4444', width: 2 },
+                fill: 'tozeroy',
+                fillcolor: values[values.length-1] >= 1 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+            }], { ...DARK_LAYOUT, margin: { t: 5, r: 10, b: 30, l: 40 } }, PLOTLY_CONFIG);
+        }
+
+    } catch (e) {
+        result.innerHTML = '<p style="color:#ef4444;">Failed to look up ' + ticker + ': ' + e.message + '</p>';
+    }
+}
+
+// --- Init ---
+loadRegime();
+loadCurve();
+loadSpreads();
+loadNews();
+loadReddit();
+</script>
+{% endblock %}

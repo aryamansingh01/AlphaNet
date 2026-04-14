@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} - Treasury Auctions{% endblock %}
+{% block page_title %}Treasury Auctions{% endblock %}
+
+{% block content %}
+
+<!-- Row 1: Summary Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Demand Forecast</span>
+            <span class="info-tip" data-tip="Heuristic demand forecast based on VIX, curve slope, and credit spreads. Strong demand typically leads to lower auction tails."></span>
+        </div>
+        <div id="forecast-display">
+            <div class="skeleton" style="height:24px;width:100px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Avg Bid-to-Cover</span>
+            <span class="info-tip" data-tip="Average bid-to-cover ratio across recent auctions. Higher values indicate stronger demand. Below 2.2 is considered weak."></span>
+        </div>
+        <div id="avg-btc-display">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Indirect Bidder Trend</span>
+            <span class="info-tip" data-tip="Rolling average indirect bidder participation. Indirect bidders (foreign central banks, etc.) are considered a barometer of foreign demand."></span>
+        </div>
+        <div id="indirect-display">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Recent Tail</span>
+            <span class="info-tip" data-tip="Difference between auction high yield and recent average. Positive tail = weaker demand (buyers demanded higher yield)."></span>
+        </div>
+        <div id="tail-display">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Upcoming Auctions -->
+<div class="card mb-6">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <p class="section-hdr" style="margin:0;">Upcoming Auctions</p>
+        <span class="info-tip" data-tip="Scheduled Treasury auctions with expected offering amounts and demand forecast."></span>
+    </div>
+    <div id="upcoming-table" style="overflow-x:auto;">
+        <div class="skeleton" style="height:14px;width:100%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:90%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:95%;"></div>
+    </div>
+</div>
+
+<!-- Row 3: Recent Results + Demand Trends -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <p class="section-hdr" style="margin:0;">Recent Auction Results</p>
+            <span class="info-tip" data-tip="Results from recent Treasury auctions including bid-to-cover ratios, indirect bidder participation, and high yield."></span>
+        </div>
+        <div id="recent-table" style="overflow-x:auto;max-height:400px;">
+            <div class="skeleton" style="height:14px;width:100%;margin-bottom:10px;"></div>
+            <div class="skeleton" style="height:14px;width:90%;margin-bottom:10px;"></div>
+            <div class="skeleton" style="height:14px;width:95%;"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <p class="section-hdr" style="margin:0;">Bid-to-Cover Trend</p>
+            <span class="info-tip" data-tip="Bid-to-cover ratio over time by security type. Declining trends indicate weakening demand."></span>
+        </div>
+        <div id="btc-trend-chart" style="width:100%;height:320px;">
+            <div class="skeleton" style="height:100%;width:100%;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 4: Demand Forecast Detail -->
+<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <p class="section-hdr" style="margin:0;">Demand Forecast Detail</p>
+        <span class="info-tip" data-tip="Breakdown of the demand forecast showing contributing factors from market conditions."></span>
+    </div>
+    <div id="forecast-detail">
+        <div class="skeleton" style="height:14px;width:80%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:60%;"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadUpcoming() {
+    try {
+        const res = await fetch('/api/auction/upcoming');
+        const data = await res.json();
+
+        // Forecast card
+        if (data.demand_forecast) {
+            const f = data.demand_forecast;
+            const fMap = {
+                strong: { badge: 'badge-green', label: 'STRONG' },
+                moderate: { badge: 'badge-amber', label: 'MODERATE' },
+                weak: { badge: 'badge-red', label: 'WEAK' },
+            };
+            const fm = fMap[f.forecast] || { badge: 'badge-blue', label: f.forecast.toUpperCase() };
+            document.getElementById('forecast-display').innerHTML =
+                '<span class="' + fm.badge + '" style="font-size:13px;padding:3px 12px;">' + fm.label + '</span>' +
+                '<span style="font-size:11px;color:#71717a;margin-left:6px;">' + (f.confidence * 100).toFixed(0) + '% conf</span>';
+
+            // Forecast detail
+            let detailHtml = '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">';
+            detailHtml += '<div class="card-sm"><p style="font-size:11px;color:#71717a;margin-bottom:4px;">Overall Forecast</p>';
+            detailHtml += '<span class="' + fm.badge + '" style="font-size:14px;padding:4px 14px;">' + fm.label + '</span></div>';
+            detailHtml += '<div class="card-sm"><p style="font-size:11px;color:#71717a;margin-bottom:4px;">Confidence</p>';
+            detailHtml += '<p class="metric" style="color:#fafafa;">' + (f.confidence * 100).toFixed(0) + '%</p></div>';
+            detailHtml += '<div class="card-sm"><p style="font-size:11px;color:#71717a;margin-bottom:4px;">Score</p>';
+            const sc = f.score >= 0 ? '#22c55e' : '#ef4444';
+            detailHtml += '<p class="metric" style="color:' + sc + ';">' + (f.score >= 0 ? '+' : '') + f.score.toFixed(1) + '</p></div>';
+            detailHtml += '</div>';
+
+            if (f.factors && f.factors.length > 0) {
+                detailHtml += '<div style="margin-top:12px;">';
+                for (const factor of f.factors) {
+                    const icon = factor.includes('support') || factor.includes('attract') || factor.includes('strong') ?
+                        '<span style="color:#22c55e;margin-right:6px;">+</span>' :
+                        factor.includes('dampen') || factor.includes('reduce') || factor.includes('aversion') ?
+                        '<span style="color:#ef4444;margin-right:6px;">-</span>' :
+                        '<span style="color:#f59e0b;margin-right:6px;">=</span>';
+                    detailHtml += '<p style="font-size:13px;color:#a1a1aa;margin-bottom:4px;">' + icon + factor + '</p>';
+                }
+                detailHtml += '</div>';
+            }
+            document.getElementById('forecast-detail').innerHTML = detailHtml;
+        }
+
+        // Upcoming table
+        const upcoming = data.upcoming || [];
+        if (upcoming.length > 0) {
+            let html = '<table style="width:100%;font-size:13px;border-collapse:collapse;">';
+            html += '<thead><tr style="border-bottom:1px solid #27272a;">';
+            html += '<th style="text-align:left;padding:8px 8px 8px 0;font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Type</th>';
+            html += '<th style="text-align:left;padding:8px;font-size:11px;font-weight:500;color:#71717a;">Term</th>';
+            html += '<th style="text-align:left;padding:8px;font-size:11px;font-weight:500;color:#71717a;">Date</th>';
+            html += '<th style="text-align:right;padding:8px 0 8px 8px;font-size:11px;font-weight:500;color:#71717a;">Amount ($B)</th>';
+            html += '</tr></thead><tbody>';
+
+            for (const a of upcoming) {
+                const amt = a.offering_amount ? (a.offering_amount / 1e9).toFixed(0) : '--';
+                html += '<tr style="border-bottom:1px solid rgba(39,39,42,.4);">';
+                html += '<td style="padding:8px 8px 8px 0;color:#fafafa;">' + (a.security_type || '--') + '</td>';
+                html += '<td style="padding:8px;color:#a1a1aa;">' + (a.security_term || '--') + '</td>';
+                html += '<td style="padding:8px;color:#a1a1aa;">' + (a.auction_date || '--') + '</td>';
+                html += '<td style="text-align:right;padding:8px 0 8px 8px;color:#fafafa;">$' + amt + 'B</td>';
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            document.getElementById('upcoming-table').innerHTML = html;
+        }
+    } catch (e) {
+        document.getElementById('upcoming-table').innerHTML =
+            '<p style="color:#ef4444;font-size:13px;">Failed to load upcoming auctions: ' + e.message + '</p>';
+    }
+}
+
+async function loadRecent() {
+    try {
+        const res = await fetch('/api/auction/recent');
+        const data = await res.json();
+
+        // Metrics cards
+        if (data.metrics) {
+            const m = data.metrics;
+            const avgBtc = m.avg_bid_to_cover || {};
+            const allBtc = Object.values(avgBtc);
+            const overall = allBtc.length > 0 ? (allBtc.reduce((a, b) => a + b, 0) / allBtc.length) : 0;
+            const btcColor = overall >= 2.5 ? '#22c55e' : overall >= 2.2 ? '#f59e0b' : '#ef4444';
+            document.getElementById('avg-btc-display').innerHTML =
+                '<span class="metric" style="color:' + btcColor + ';">' + overall.toFixed(2) + 'x</span>';
+
+            document.getElementById('indirect-display').innerHTML =
+                '<span class="metric" style="color:#fafafa;">' + (m.indirect_bidder_trend || 0).toFixed(1) + '%</span>';
+
+            const tail = m.recent_tail_bps || 0;
+            const tailColor = tail > 2 ? '#ef4444' : tail < -2 ? '#22c55e' : '#f59e0b';
+            document.getElementById('tail-display').innerHTML =
+                '<span class="metric" style="color:' + tailColor + ';">' + (tail > 0 ? '+' : '') + tail.toFixed(1) + ' bps</span>';
+        }
+
+        // Recent results table
+        const auctions = data.auctions || [];
+        if (auctions.length > 0) {
+            let html = '<table style="width:100%;font-size:13px;border-collapse:collapse;">';
+            html += '<thead><tr style="border-bottom:1px solid #27272a;">';
+            html += '<th style="text-align:left;padding:8px 8px 8px 0;font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Date</th>';
+            html += '<th style="text-align:left;padding:8px;font-size:11px;font-weight:500;color:#71717a;">Type</th>';
+            html += '<th style="text-align:left;padding:8px;font-size:11px;font-weight:500;color:#71717a;">Term</th>';
+            html += '<th style="text-align:right;padding:8px;font-size:11px;font-weight:500;color:#71717a;">BTC</th>';
+            html += '<th style="text-align:right;padding:8px;font-size:11px;font-weight:500;color:#71717a;">Indirect%</th>';
+            html += '<th style="text-align:right;padding:8px 0 8px 8px;font-size:11px;font-weight:500;color:#71717a;">High Yield</th>';
+            html += '</tr></thead><tbody>';
+
+            for (const a of auctions) {
+                const btc = a.bid_to_cover_ratio || 0;
+                const btcColor = btc >= 2.5 ? '#22c55e' : btc >= 2.2 ? '#f59e0b' : '#ef4444';
+                html += '<tr style="border-bottom:1px solid rgba(39,39,42,.4);">';
+                html += '<td style="padding:8px 8px 8px 0;color:#a1a1aa;">' + (a.auction_date || '--') + '</td>';
+                html += '<td style="padding:8px;color:#fafafa;">' + (a.security_type || '--') + '</td>';
+                html += '<td style="padding:8px;color:#a1a1aa;">' + (a.security_term || '--') + '</td>';
+                html += '<td style="text-align:right;padding:8px;color:' + btcColor + ';font-weight:600;">' + btc.toFixed(2) + '</td>';
+                html += '<td style="text-align:right;padding:8px;color:#fafafa;">' + (a.indirect_bidder_pct || 0).toFixed(1) + '%</td>';
+                html += '<td style="text-align:right;padding:8px 0 8px 8px;color:#fafafa;">' + (a.high_yield || 0).toFixed(3) + '%</td>';
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            document.getElementById('recent-table').innerHTML = html;
+        }
+    } catch (e) {
+        document.getElementById('recent-table').innerHTML =
+            '<p style="color:#ef4444;font-size:13px;">Failed to load recent auctions: ' + e.message + '</p>';
+    }
+}
+
+async function loadAnalytics() {
+    try {
+        const res = await fetch('/api/auction/analytics');
+        const data = await res.json();
+
+        // Bid-to-cover trend chart
+        const trend = data.btc_trend || [];
+        if (trend.length > 0) {
+            // Group by security type
+            const types = {};
+            for (const t of trend) {
+                const st = t.security_type || 'Other';
+                if (!types[st]) types[st] = { dates: [], btc: [] };
+                types[st].dates.push(t.date);
+                types[st].btc.push(t.bid_to_cover);
+            }
+
+            const colorMap = { Bill: '#3b82f6', Note: '#22c55e', Bond: '#f59e0b' };
+            const traces = [];
+            for (const [name, d] of Object.entries(types)) {
+                traces.push({
+                    x: d.dates, y: d.btc,
+                    type: 'scatter', mode: 'lines+markers',
+                    name: name,
+                    line: { color: colorMap[name] || '#a78bfa', width: 2 },
+                    marker: { size: 5 },
+                });
+            }
+
+            // Threshold line
+            traces.push({
+                x: [trend[trend.length - 1].date, trend[0].date],
+                y: [2.2, 2.2],
+                type: 'scatter', mode: 'lines',
+                name: 'Weak threshold',
+                line: { color: 'rgba(239,68,68,0.4)', width: 1, dash: 'dash' },
+            });
+
+            Plotly.newPlot('btc-trend-chart', traces, {
+                ...DARK_LAYOUT,
+                yaxis: { ...DARK_LAYOUT.yaxis, title: 'Bid-to-Cover Ratio' },
+                legend: { ...DARK_LAYOUT.legend, orientation: 'h', y: -0.2 },
+                margin: { t: 10, r: 12, b: 50, l: 50 },
+            }, PLOTLY_CONFIG);
+        }
+    } catch (e) {
+        document.getElementById('btc-trend-chart').innerHTML =
+            '<p style="color:#ef4444;font-size:13px;padding:16px;">Failed to load analytics: ' + e.message + '</p>';
+    }
+}
+
+loadUpcoming();
+loadRecent();
+loadAnalytics();
+</script>
+{% endblock %}

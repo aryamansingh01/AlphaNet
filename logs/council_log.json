@@ -1,0 +1,569 @@
+[
+  {
+    "timestamp": "2026-04-14T20:35:28.137990+00:00",
+    "direction": "LONG",
+    "conviction": 0.14,
+    "opinions": {
+      "equity": {
+        "direction": "SHORT",
+        "conviction": 0.3,
+        "reasoning": "21d momentum negative (-2.07%)"
+      },
+      "credit": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "credit markets neutral"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "WARNING: all analysts disagree \u2014 low conviction environment"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T20:40:00.293816+00:00",
+    "direction": "SHORT",
+    "conviction": 0.105,
+    "opinions": {
+      "equity": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "no strong signals"
+      },
+      "credit": {
+        "direction": "SHORT",
+        "conviction": 0.3,
+        "reasoning": "spreads widening rapidly (22.5% in 21d)"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.1,
+        "reasoning": "regime: risk_on; DIVERGENCE: equities up but credit widening \u2014 bearish"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.13,
+        "reasoning": "WARNING: all analysts disagree \u2014 low conviction environment"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T20:41:52.933778+00:00",
+    "direction": "LONG",
+    "conviction": 0.14,
+    "opinions": {
+      "equity": {
+        "direction": "SHORT",
+        "conviction": 0.3,
+        "reasoning": "63d trend bearish (-6.99%)"
+      },
+      "credit": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "credit markets neutral"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "WARNING: all analysts disagree \u2014 low conviction environment"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T20:45:34.133423+00:00",
+    "direction": "LONG",
+    "conviction": 0.14,
+    "opinions": {
+      "equity": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "no strong signals"
+      },
+      "credit": {
+        "direction": "SHORT",
+        "conviction": 0.4,
+        "reasoning": "HY spreads wide (z=1.6), stress signal"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.27,
+        "reasoning": "WARNING: all analysts disagree \u2014 low conviction environment"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T20:47:49.700323+00:00",
+    "direction": "LONG",
+    "conviction": 0.23,
+    "opinions": {
+      "equity": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "63d trend bullish (6.28%)"
+      },
+      "credit": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "credit markets neutral"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:03:50.705678+00:00",
+    "direction": "LONG",
+    "conviction": 0.32,
+    "opinions": {
+      "equity": {
+        "direction": "LONG",
+        "conviction": 0.6,
+        "reasoning": "21d momentum positive (4.19%); 63d trend bullish (16.31%)"
+      },
+      "credit": {
+        "direction": "SHORT",
+        "conviction": 0.4,
+        "reasoning": "HY spreads wide (z=1.7), stress signal"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.47,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:07:12.047822+00:00",
+    "direction": "SHORT",
+    "conviction": 0.245,
+    "opinions": {
+      "equity": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "63d trend bullish (18.32%)"
+      },
+      "credit": {
+        "direction": "SHORT",
+        "conviction": 0.7,
+        "reasoning": "HY spreads wide (z=2.8), stress signal; spreads widening rapidly (23.5% in 21d)"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "regime: risk_on; VIX low (14.5); DIVERGENCE: equities up but credit widening \u2014 bearish"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.43,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:10:53.999984+00:00",
+    "direction": "SHORT",
+    "conviction": 0.245,
+    "opinions": {
+      "equity": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "21d momentum positive (4.86%)"
+      },
+      "credit": {
+        "direction": "SHORT",
+        "conviction": 0.7,
+        "reasoning": "HY spreads wide (z=1.4), stress signal; spreads widening rapidly (22.6% in 21d)"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.1,
+        "reasoning": "regime: risk_on; DIVERGENCE: equities up but credit widening \u2014 bearish"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.37,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:16:42.922057+00:00",
+    "direction": "SHORT",
+    "conviction": 0.285,
+    "opinions": {
+      "equity": {
+        "direction": "SHORT",
+        "conviction": 0.6,
+        "reasoning": "21d momentum negative (-2.98%); 63d trend bearish (-12.55%)"
+      },
+      "credit": {
+        "direction": "SHORT",
+        "conviction": 0.3,
+        "reasoning": "spreads widening rapidly (17.5% in 21d)"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.43,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:18:50.129851+00:00",
+    "direction": "LONG",
+    "conviction": 0.3,
+    "opinions": {
+      "equity": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "21d momentum positive (2.57%)"
+      },
+      "credit": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "credit markets neutral"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.6,
+        "reasoning": "regime: risk_on; VIX low (14.1)"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.3,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:21:55.436627+00:00",
+    "direction": "LONG",
+    "conviction": 0.405,
+    "opinions": {
+      "equity": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "63d trend bullish (6.75%)"
+      },
+      "credit": {
+        "direction": "LONG",
+        "conviction": 0.2,
+        "reasoning": "spreads tightening (-11.4% in 21d)"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.7,
+        "reasoning": "regime: risk_on; DIVERGENCE: equities down but credit tightening \u2014 bullish"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.4,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:28:32.687237+00:00",
+    "direction": "LONG",
+    "conviction": 0.23,
+    "opinions": {
+      "equity": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "63d trend bullish (9.62%)"
+      },
+      "credit": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "credit markets neutral"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:38:31.601860+00:00",
+    "direction": "LONG",
+    "conviction": 0.32,
+    "opinions": {
+      "equity": {
+        "direction": "LONG",
+        "conviction": 0.6,
+        "reasoning": "21d momentum positive (7.21%); 63d trend bullish (13.85%)"
+      },
+      "credit": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "credit markets neutral"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.33,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:51:37.505972+00:00",
+    "direction": "LONG",
+    "conviction": 0.245,
+    "opinions": {
+      "equity": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "no strong signals"
+      },
+      "credit": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "HY spreads tight (z=-1.1), risk-on"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:51:54.969244+00:00",
+    "direction": "LONG",
+    "conviction": 0.245,
+    "opinions": {
+      "equity": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "no strong signals"
+      },
+      "credit": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "HY spreads tight (z=-1.1), risk-on"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:54:14.317801+00:00",
+    "direction": "LONG",
+    "conviction": 0.245,
+    "opinions": {
+      "equity": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "no strong signals"
+      },
+      "credit": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "HY spreads tight (z=-1.1), risk-on"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T21:54:18.193260+00:00",
+    "direction": "LONG",
+    "conviction": 0.245,
+    "opinions": {
+      "equity": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "no strong signals"
+      },
+      "credit": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "HY spreads tight (z=-1.1), risk-on"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T22:23:51.699218+00:00",
+    "direction": "LONG",
+    "conviction": 0.245,
+    "opinions": {
+      "equity": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "no strong signals"
+      },
+      "credit": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "HY spreads tight (z=-1.1), risk-on"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T22:25:49.357578+00:00",
+    "direction": "LONG",
+    "conviction": 0.245,
+    "opinions": {
+      "equity": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "no strong signals"
+      },
+      "credit": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "HY spreads tight (z=-1.1), risk-on"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T22:27:34.408291+00:00",
+    "direction": "LONG",
+    "conviction": 0.245,
+    "opinions": {
+      "equity": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "no strong signals"
+      },
+      "credit": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "HY spreads tight (z=-1.1), risk-on"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  },
+  {
+    "timestamp": "2026-04-14T23:50:42.264029+00:00",
+    "direction": "LONG",
+    "conviction": 0.245,
+    "opinions": {
+      "equity": {
+        "direction": "FLAT",
+        "conviction": 0.0,
+        "reasoning": "no strong signals"
+      },
+      "credit": {
+        "direction": "LONG",
+        "conviction": 0.3,
+        "reasoning": "HY spreads tight (z=-1.1), risk-on"
+      },
+      "macro": {
+        "direction": "LONG",
+        "conviction": 0.4,
+        "reasoning": "regime: risk_on"
+      },
+      "risk": {
+        "direction": "APPROVED",
+        "conviction": 0.23,
+        "reasoning": "no risk flags \u2014 approved"
+      }
+    }
+  }
+]

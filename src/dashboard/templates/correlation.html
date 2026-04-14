@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} - Correlation Regimes{% endblock %}
+{% block page_title %}Correlation Regimes{% endblock %}
+
+{% block content %}
+
+<!-- Row 1: Summary Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Stock-Bond Corr</span>
+            <span class="info-tip" data-tip="Rolling 63-day correlation between equity returns and Treasury returns. Negative = diversification benefit intact."></span>
+        </div>
+        <div id="stock-bond-corr">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Correlation Regime</span>
+            <span class="info-tip" data-tip="Current regime based on cross-asset correlation structure. Diversified, Correlated, or Crisis regimes."></span>
+        </div>
+        <div id="corr-regime">
+            <div class="skeleton" style="height:24px;width:120px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Risk Factors (90%)</span>
+            <span class="info-tip" data-tip="Number of principal components needed to explain 90% of portfolio variance. Fewer = more concentrated risk."></span>
+        </div>
+        <div id="risk-factors">
+            <div class="skeleton" style="height:24px;width:60px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">PC1 Share</span>
+            <span class="info-tip" data-tip="Percentage of total variance explained by the first principal component. High values indicate a single dominant risk factor."></span>
+        </div>
+        <div id="pc1-share">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Correlation Matrix + Stock-Bond Time Series -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <p class="section-hdr" style="margin:0;">Cross-Asset Correlation Matrix</p>
+            <span class="info-tip" data-tip="Pairwise correlations across major asset classes using 63-day rolling window."></span>
+        </div>
+        <div id="corr-matrix-chart" style="width:100%;height:340px;">
+            <div class="skeleton" style="height:100%;width:100%;"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <p class="section-hdr" style="margin:0;">Stock-Bond Correlation History</p>
+            <span class="info-tip" data-tip="Rolling 63-day correlation between SPY and TLT. Background color bands show the prevailing correlation regime."></span>
+        </div>
+        <div id="corr-history-chart" style="width:100%;height:340px;">
+            <div class="skeleton" style="height:100%;width:100%;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: PCA -->
+<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <p class="section-hdr" style="margin:0;">Risk Concentration (PCA)</p>
+        <span class="info-tip" data-tip="Principal Component Analysis of cross-asset returns. Shows how many independent risk factors drive portfolio variance."></span>
+    </div>
+    <div id="pca-chart" style="width:100%;height:300px;">
+        <div class="skeleton" style="height:100%;width:100%;"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadCorrelations() {
+    try {
+        const res = await fetch('/api/cross-asset/correlations');
+        const data = await res.json();
+
+        // Stock-bond correlation card
+        if (data.stock_bond_corr !== undefined) {
+            const sbc = data.stock_bond_corr;
+            const sbcColor = sbc < -0.1 ? '#22c55e' : sbc > 0.3 ? '#ef4444' : '#f59e0b';
+            document.getElementById('stock-bond-corr').innerHTML =
+                '<span class="metric" style="color:' + sbcColor + ';">' + sbc.toFixed(3) + '</span>';
+        }
+
+        // Regime card
+        const regimeData = data.correlation_regime || {};
+        const regimeName = regimeData.regime || data.regime || 'unknown';
+        const regimeMap = {
+            negative_normal: { badge: 'badge-green', label: 'NEGATIVE (NORMAL)' },
+            transition: { badge: 'badge-amber', label: 'TRANSITION' },
+            positive_abnormal: { badge: 'badge-red', label: 'POSITIVE (ABNORMAL)' },
+        };
+        const rm = regimeMap[regimeName] || { badge: 'badge-blue', label: regimeName.replace(/_/g,' ').toUpperCase() };
+        document.getElementById('corr-regime').innerHTML =
+            '<span class="' + rm.badge + '" style="font-size:13px;padding:3px 12px;">' + rm.label + '</span>';
+
+        // PCA cards
+        if (data.pca) {
+            const pca = data.pca;
+            document.getElementById('risk-factors').innerHTML =
+                '<span class="metric" style="color:#fafafa;">' + (pca.n_factors_90pct || '--') + '</span>';
+            document.getElementById('pc1-share').innerHTML =
+                '<span class="metric" style="color:#fafafa;">' + ((pca.pc1_share || 0) * 100).toFixed(1) + '%</span>';
+
+            // PCA bar chart
+            if (pca.explained_variance && pca.explained_variance.length > 0) {
+                const labels = pca.explained_variance.map((_, i) => 'PC' + (i + 1));
+                const vals = pca.explained_variance.map(v => (v * 100));
+                const cumulative = [];
+                let cum = 0;
+                for (const v of vals) { cum += v; cumulative.push(cum); }
+
+                Plotly.newPlot('pca-chart', [
+                    {
+                        x: labels, y: vals, type: 'bar', name: 'Explained Var',
+                        marker: { color: '#3b82f6' },
+                    },
+                    {
+                        x: labels, y: cumulative, type: 'scatter', mode: 'lines+markers',
+                        name: 'Cumulative', yaxis: 'y2',
+                        line: { color: '#f59e0b', width: 2 },
+                        marker: { size: 5 },
+                    },
+                ], {
+                    ...DARK_LAYOUT,
+                    yaxis: { ...DARK_LAYOUT.yaxis, title: 'Variance (%)' },
+                    yaxis2: { title: 'Cumulative (%)', overlaying: 'y', side: 'right', gridcolor: 'transparent', tickfont: { color: '#f59e0b' }, range: [0, 105] },
+                    legend: { ...DARK_LAYOUT.legend, orientation: 'h', y: -0.2 },
+                    margin: { t: 10, r: 50, b: 50, l: 50 },
+                }, PLOTLY_CONFIG);
+            }
+        }
+
+        // Correlation matrix heatmap
+        if (data.matrix) {
+            // API returns {row: {col: value}} — convert to arrays
+            const assets = Object.keys(data.matrix);
+            const values = assets.map(row => assets.map(col => data.matrix[row][col] || 0));
+
+            Plotly.newPlot('corr-matrix-chart', [{
+                z: values,
+                x: assets,
+                y: assets,
+                type: 'heatmap',
+                colorscale: [
+                    [0, '#ef4444'],
+                    [0.5, '#27272a'],
+                    [1, '#3b82f6'],
+                ],
+                zmin: -1, zmax: 1,
+                text: values.map(row => row.map(v => v.toFixed(2))),
+                texttemplate: '%{text}',
+                textfont: { size: 11, color: '#a1a1aa' },
+                showscale: true,
+                colorbar: { tickfont: { color: '#71717a' }, len: 0.8 },
+            }], {
+                ...DARK_LAYOUT,
+                margin: { t: 10, r: 20, b: 80, l: 80 },
+                xaxis: { ...DARK_LAYOUT.xaxis, tickangle: -45 },
+            }, PLOTLY_CONFIG);
+        }
+
+    } catch (e) {
+        document.getElementById('corr-matrix-chart').innerHTML = '<p style="color:#ef4444;font-size:13px;padding:16px;">Failed to load correlations: ' + e.message + '</p>';
+    }
+}
+
+async function loadCorrHistory() {
+    try {
+        const res = await fetch('/api/cross-asset/correlation-history');
+        const data = await res.json();
+
+        if (data.history && data.history.length > 0) {
+            const dates = data.history.map(h => h.date);
+            const corrs = data.history.map(h => h.correlation || h.stock_bond_corr || 0);
+
+            // Color bands for regimes
+            const shapes = [];
+            if (data.regimes) {
+                for (const r of data.regimes) {
+                    const color = r.regime === 'diversified' ? 'rgba(34,197,94,0.05)' :
+                                  r.regime === 'crisis' ? 'rgba(239,68,68,0.05)' :
+                                  'rgba(245,158,11,0.05)';
+                    shapes.push({
+                        type: 'rect', xref: 'x', yref: 'paper',
+                        x0: r.start, x1: r.end, y0: 0, y1: 1,
+                        fillcolor: color, line: { width: 0 },
+                    });
+                }
+            }
+
+            Plotly.newPlot('corr-history-chart', [{
+                x: dates, y: corrs,
+                type: 'scatter', mode: 'lines',
+                name: 'Stock-Bond Corr',
+                line: { color: '#3b82f6', width: 2 },
+            }, {
+                x: dates, y: dates.map(() => 0),
+                type: 'scatter', mode: 'lines',
+                line: { color: '#3f3f46', width: 1, dash: 'dash' },
+                showlegend: false,
+            }], {
+                ...DARK_LAYOUT,
+                yaxis: { ...DARK_LAYOUT.yaxis, title: 'Correlation', range: [-1, 1] },
+                shapes: shapes,
+                margin: { t: 10, r: 12, b: 40, l: 50 },
+            }, PLOTLY_CONFIG);
+        }
+    } catch (e) {
+        document.getElementById('corr-history-chart').innerHTML = '<p style="color:#ef4444;font-size:13px;padding:16px;">Failed to load history: ' + e.message + '</p>';
+    }
+}
+
+loadCorrelations();
+loadCorrHistory();
+</script>
+{% endblock %}

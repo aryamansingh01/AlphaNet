@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} - Carry & Term Premium{% endblock %}
+{% block page_title %}Carry &amp; Term Premium{% endblock %}
+
+{% block content %}
+
+<!-- Row 1: Summary Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">SOFR Rate</span>
+            <span class="info-tip" data-tip="Secured Overnight Financing Rate. The baseline short-term funding rate used for carry calculations."></span>
+        </div>
+        <div id="sofr-display">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Best Carry Tenor</span>
+            <span class="info-tip" data-tip="The maturity point offering the highest carry return after funding costs."></span>
+        </div>
+        <div id="best-carry-display">
+            <div class="skeleton" style="height:24px;width:100px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">10Y Term Premium</span>
+            <span class="info-tip" data-tip="Compensation investors demand for holding long-duration bonds beyond expected rate path. Positive = extra yield for duration risk."></span>
+        </div>
+        <div id="term-premium-display">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Expected Rate (10Y)</span>
+            <span class="info-tip" data-tip="Market-implied average short rate over the next 10 years. Derived by subtracting term premium from observed yield."></span>
+        </div>
+        <div id="expected-rate-display">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Carry & Roll-Down Chart -->
+<div class="card mb-6">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <p class="section-hdr" style="margin:0;">Carry &amp; Roll-Down by Maturity</p>
+        <span class="info-tip" data-tip="Carry is the income earned from holding a bond. Roll-down is the capital gain from a bond moving down the curve as it ages. Breakeven line shows the yield change needed to offset total return."></span>
+    </div>
+    <div id="carry-chart" style="width:100%;height:340px;">
+        <div class="skeleton" style="height:100%;width:100%;"></div>
+    </div>
+</div>
+
+<!-- Row 3: Term Premium Decomposition -->
+<div class="card mb-6">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <p class="section-hdr" style="margin:0;">10Y Yield Decomposition</p>
+        <span class="info-tip" data-tip="Decomposes the 10-year Treasury yield into the expected short rate path and the term premium component over time."></span>
+    </div>
+    <div id="term-premium-chart" style="width:100%;height:340px;">
+        <div class="skeleton" style="height:100%;width:100%;"></div>
+    </div>
+</div>
+
+<!-- Row 4: Carry Details Table -->
+<div class="card">
+    <p class="section-hdr" style="margin-bottom:12px;">Carry &amp; Roll-Down Detail</p>
+    <div id="carry-table" style="overflow-x:auto;">
+        <div class="skeleton" style="height:14px;width:100%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:90%;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:14px;width:95%;"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadCarry() {
+    try {
+        const res = await fetch('/api/fixed-income/carry-rolldown');
+        const data = await res.json();
+
+        if (data.sofr_rate !== undefined) {
+            document.getElementById('sofr-display').innerHTML =
+                '<span class="metric" style="color:#fafafa;">' + data.sofr_rate.toFixed(2) + '%</span>';
+        }
+
+        // API returns {analysis: [{maturity, carry, roll_down, total_return, breakeven_bps}...]}
+        const analysis = data.analysis || [];
+
+        if (analysis.length > 0) {
+            const tenors = analysis.map(a => a.maturity);
+            const carries = analysis.map(a => a.carry * 100);  // convert % to bps
+            const rolldowns = analysis.map(a => a.roll_down * 100);
+            const breakevens = analysis.map(a => a.breakeven_bps);
+            const totals = analysis.map(a => a.total_return * 100);
+
+            // Find best carry
+            let bestIdx = 0;
+            for (let i = 1; i < totals.length; i++) {
+                if (totals[i] > totals[bestIdx]) bestIdx = i;
+            }
+            document.getElementById('best-carry-display').innerHTML =
+                '<span class="metric" style="color:#22c55e;">' + tenors[bestIdx] + '</span>' +
+                '<span style="font-size:12px;color:#71717a;margin-left:6px;">' + totals[bestIdx].toFixed(0) + ' bps</span>';
+
+            // Stacked bar chart
+            Plotly.newPlot('carry-chart', [
+                { x: tenors, y: carries, type: 'bar', name: 'Carry', marker: { color: '#3b82f6' } },
+                { x: tenors, y: rolldowns, type: 'bar', name: 'Roll-Down', marker: { color: '#22c55e' } },
+                { x: tenors, y: breakevens, type: 'scatter', mode: 'lines+markers', name: 'Breakeven', yaxis: 'y2',
+                  line: { color: '#f59e0b', width: 2, dash: 'dot' }, marker: { size: 5 } },
+            ], {
+                ...DARK_LAYOUT, barmode: 'stack',
+                yaxis: { ...DARK_LAYOUT.yaxis, title: 'Return (bps)' },
+                yaxis2: { title: 'Breakeven (bps)', overlaying: 'y', side: 'right', gridcolor: 'transparent', tickfont: { color: '#f59e0b' } },
+                legend: { ...DARK_LAYOUT.legend, orientation: 'h', y: -0.15 },
+                margin: { t: 10, r: 50, b: 50, l: 50 },
+            }, PLOTLY_CONFIG);
+
+            // Table
+            let html = '<table style="width:100%;font-size:13px;border-collapse:collapse;">';
+            html += '<thead><tr style="border-bottom:1px solid #27272a;">';
+            html += '<th style="text-align:left;padding:8px 8px 8px 0;font-size:11px;font-weight:500;color:#71717a;">Tenor</th>';
+            html += '<th style="text-align:right;padding:8px;font-size:11px;font-weight:500;color:#71717a;">Carry (bps)</th>';
+            html += '<th style="text-align:right;padding:8px;font-size:11px;font-weight:500;color:#71717a;">Roll-Down (bps)</th>';
+            html += '<th style="text-align:right;padding:8px;font-size:11px;font-weight:500;color:#71717a;">Total (bps)</th>';
+            html += '<th style="text-align:right;padding:8px 0 8px 8px;font-size:11px;font-weight:500;color:#71717a;">Breakeven (bps)</th>';
+            html += '</tr></thead><tbody>';
+            for (let i = 0; i < analysis.length; i++) {
+                const tc = totals[i] >= 0 ? '#22c55e' : '#ef4444';
+                html += '<tr style="border-bottom:1px solid rgba(39,39,42,.4);">';
+                html += '<td style="padding:8px 8px 8px 0;color:#fafafa;">' + tenors[i] + '</td>';
+                html += '<td style="text-align:right;padding:8px;color:#3b82f6;">' + carries[i].toFixed(1) + '</td>';
+                html += '<td style="text-align:right;padding:8px;color:#22c55e;">' + rolldowns[i].toFixed(1) + '</td>';
+                html += '<td style="text-align:right;padding:8px;color:' + tc + ';font-weight:600;">' + totals[i].toFixed(1) + '</td>';
+                html += '<td style="text-align:right;padding:8px 0 8px 8px;color:#f59e0b;">' + breakevens[i].toFixed(0) + '</td>';
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            document.getElementById('carry-table').innerHTML = html;
+        } else {
+            document.getElementById('carry-chart').innerHTML = '<p style="color:#52525b;font-size:13px;padding:16px;">No carry data available</p>';
+        }
+    } catch (e) {
+        document.getElementById('carry-chart').innerHTML = '<p style="color:#ef4444;font-size:13px;padding:16px;">Failed: ' + e.message + '</p>';
+    }
+}
+
+async function loadTermPremium() {
+    try {
+        const res = await fetch('/api/fixed-income/term-premium');
+        const data = await res.json();
+
+        // API returns {latest: {ten_year_yield, term_premium, expected_rate}, history: [...]}
+        if (data.latest) {
+            const tp = data.latest.term_premium;
+            const er = data.latest.expected_rate;
+            if (tp !== undefined) {
+                const tpColor = tp >= 0 ? '#22c55e' : '#ef4444';
+                document.getElementById('term-premium-display').innerHTML =
+                    '<span class="metric" style="color:' + tpColor + ';">' + (tp * 100).toFixed(0) + ' bps</span>';
+            }
+            if (er !== undefined) {
+                document.getElementById('expected-rate-display').innerHTML =
+                    '<span class="metric" style="color:#fafafa;">' + er.toFixed(2) + '%</span>';
+            }
+        }
+
+        const history = data.history || [];
+        if (history.length > 0) {
+            const dates = history.map(h => h.date);
+            // API returns values already in percent (e.g. 4.3, not 0.043)
+            const expected = history.map(h => h.expected_rate || 0);
+            const yields = history.map(h => h.yield || h.ten_year_yield || 0);
+
+            Plotly.newPlot('term-premium-chart', [
+                { x: dates, y: expected, type: 'scatter', mode: 'lines', name: 'Expected Rate',
+                  fill: 'tozeroy', line: { color: '#3b82f6', width: 1 }, fillcolor: 'rgba(59,130,246,0.15)' },
+                { x: dates, y: yields, type: 'scatter', mode: 'lines', name: '10Y Yield',
+                  fill: 'tonexty', line: { color: '#22c55e', width: 1 }, fillcolor: 'rgba(34,197,94,0.15)' },
+            ], {
+                ...DARK_LAYOUT,
+                yaxis: { ...DARK_LAYOUT.yaxis, title: 'Yield (%)' },
+                legend: { ...DARK_LAYOUT.legend, orientation: 'h', y: -0.15 },
+                margin: { t: 10, r: 12, b: 50, l: 50 },
+            }, PLOTLY_CONFIG);
+        } else {
+            document.getElementById('term-premium-chart').innerHTML = '<p style="color:#52525b;font-size:13px;padding:16px;">No term premium history available</p>';
+        }
+    } catch (e) {
+        document.getElementById('term-premium-chart').innerHTML = '<p style="color:#ef4444;font-size:13px;padding:16px;">Failed: ' + e.message + '</p>';
+    }
+}
+
+loadCarry();
+loadTermPremium();
+</script>
+{% endblock %}

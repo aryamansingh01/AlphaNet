@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} - Strategy Lab{% endblock %}
+{% block page_title %}Strategy Lab{% endblock %}
+
+{% block content %}
+
+<!-- Strategy Configuration Panel -->
+<div class="card mb-6">
+    <p class="section-hdr" style="margin-bottom:16px;">Strategy Configuration</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Strategy Type</label>
+            <select id="strategy-select"
+                    style="width:100%;background:#09090b;color:#fafafa;border:1px solid #27272a;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;"
+                    onfocus="this.style.borderColor='#3f3f46'" onblur="this.style.borderColor='#27272a'">
+                <option value="momentum">Equity Momentum</option>
+                <option value="cross_sectional">Cross-Sectional</option>
+                <option value="mean_reversion">Mean Reversion</option>
+                <option value="credit_rotation">Credit Rotation</option>
+                <option value="curve_flattener">Curve Flattener</option>
+                <option value="cross_asset_composite">Cross-Asset Composite</option>
+            </select>
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Lookback (days)</label>
+            <input id="lookback-input" type="number" value="63" min="5" max="504"
+                   style="width:100%;background:#09090b;color:#fafafa;border:1px solid #27272a;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;"
+                   onfocus="this.style.borderColor='#3f3f46'" onblur="this.style.borderColor='#27272a'">
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Transaction Costs (bps)</label>
+            <input id="txcost-input" type="number" value="5" min="0" max="100" step="1"
+                   style="width:100%;background:#09090b;color:#fafafa;border:1px solid #27272a;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;"
+                   onfocus="this.style.borderColor='#3f3f46'" onblur="this.style.borderColor='#27272a'">
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Tickers (comma-separated)</label>
+            <input id="tickers-input" type="text" value="SPY,QQQ,IWM,TLT,GLD,HYG,LQD"
+                   style="width:100%;background:#09090b;color:#fafafa;border:1px solid #27272a;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;font-family:inherit;"
+                   onfocus="this.style.borderColor='#3f3f46'" onblur="this.style.borderColor='#27272a'">
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+            <button id="btn-backtest" class="btn-primary" style="width:100%;padding:9px 16px;">Run Backtest</button>
+        </div>
+    </div>
+</div>
+
+<!-- Results Panel (hidden until backtest runs) -->
+<div id="results-panel" style="display:none;">
+
+    <!-- Results Header -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <p class="section-hdr" style="margin:0;">Backtest Results</p>
+        <span id="result-strategy-badge" class="badge-blue" style="font-size:11px;padding:3px 10px;"></span>
+    </div>
+
+    <!-- 8 Metric Cards -->
+    <div id="backtest-metrics" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6"></div>
+
+    <!-- Cumulative Returns Chart -->
+    <div class="card mb-6">
+        <p class="section-hdr" style="margin-bottom:12px;">Cumulative Returns</p>
+        <div id="backtest-chart" style="width:100%;height:300px;"></div>
+    </div>
+</div>
+
+<!-- Strategy Comparison -->
+<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <p class="section-hdr" style="margin:0;">Compare Strategies</p>
+        <button id="btn-compare" class="btn-secondary">Compare</button>
+    </div>
+
+    <!-- Toggle pills -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">
+        <label class="strat-pill">
+            <input type="checkbox" value="momentum" class="cmp-check" style="display:none;">
+            <span class="pill-dot"></span>
+            Equity Momentum
+        </label>
+        <label class="strat-pill">
+            <input type="checkbox" value="cross_sectional" class="cmp-check" style="display:none;">
+            <span class="pill-dot"></span>
+            Cross-Sectional
+        </label>
+        <label class="strat-pill">
+            <input type="checkbox" value="mean_reversion" class="cmp-check" style="display:none;">
+            <span class="pill-dot"></span>
+            Mean Reversion
+        </label>
+        <label class="strat-pill">
+            <input type="checkbox" value="credit_rotation" class="cmp-check" style="display:none;">
+            <span class="pill-dot"></span>
+            Credit Rotation
+        </label>
+        <label class="strat-pill">
+            <input type="checkbox" value="curve_flattener" class="cmp-check" style="display:none;">
+            <span class="pill-dot"></span>
+            Curve Flattener
+        </label>
+        <label class="strat-pill">
+            <input type="checkbox" value="cross_asset_composite" class="cmp-check" style="display:none;">
+            <span class="pill-dot"></span>
+            Cross-Asset Composite
+        </label>
+    </div>
+
+    <div id="compare-output" style="font-size:13px;color:#52525b;">Select strategies and click Compare.</div>
+</div>
+
+<style>
+    .strat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid #27272a;
+        color: #71717a;
+        transition: all 150ms ease;
+        user-select: none;
+    }
+    .strat-pill:hover { border-color: #3f3f46; color: #a1a1aa; }
+    .strat-pill.active {
+        border-color: #3b82f6;
+        color: #fafafa;
+        background: rgba(59,130,246,0.08);
+    }
+    .pill-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        border: 2px solid #52525b;
+        transition: all 150ms ease;
+        flex-shrink: 0;
+    }
+    .strat-pill.active .pill-dot {
+        background: #3b82f6;
+        border-color: #3b82f6;
+    }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// --- Toggle pill visual state ---
+document.querySelectorAll('.cmp-check').forEach(cb => {
+    cb.addEventListener('change', function() {
+        const label = this.closest('.strat-pill');
+        if (this.checked) {
+            label.classList.add('active');
+        } else {
+            label.classList.remove('active');
+        }
+    });
+});
+
+// --- Run Backtest ---
+document.getElementById('btn-backtest').addEventListener('click', async function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Running...';
+
+    const strategy = document.getElementById('strategy-select').value;
+    const lookback = parseInt(document.getElementById('lookback-input').value) || 63;
+    const txcost = parseFloat(document.getElementById('txcost-input').value) || 5;
+    const tickers = document.getElementById('tickers-input').value.split(',').map(t => t.trim()).filter(Boolean);
+
+    try {
+        const res = await fetch('/api/backtest/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                strategy: strategy,
+                lookback: lookback,
+                transaction_cost_bps: txcost,
+                tickers: tickers,
+            })
+        });
+        const data = await res.json();
+
+        if (data.metrics) {
+            const panel = document.getElementById('results-panel');
+            panel.style.display = 'block';
+            panel.classList.add('fade-in');
+
+            // Strategy badge
+            document.getElementById('result-strategy-badge').textContent = strategy.replace(/_/g, ' ').toUpperCase();
+
+            const m = data.metrics;
+
+            const tipMap = {
+                'Annual Return': 'Annualized return of the strategy, computed from cumulative performance over the backtest window.',
+                'Sharpe': 'Risk-adjusted return: excess return divided by volatility. Values above 1.0 are generally considered good.',
+                'Sortino': 'Like Sharpe but only penalizes downside volatility. Better for strategies with asymmetric return profiles.',
+                'Max Drawdown': 'Largest peak-to-trough decline during the backtest. Measures worst-case loss experienced.',
+                'Volatility': 'Annualized standard deviation of returns. Quantifies total risk of the strategy.',
+                'Calmar': 'Annual return divided by max drawdown. Higher values indicate better risk-adjusted performance.',
+                'Win Rate': 'Percentage of trading periods with positive returns. Context-dependent with position sizing.',
+                'Total Return': 'Cumulative return over the entire backtest period, before annualization.',
+            };
+
+            const cards = [
+                { label: 'Annual Return', value: ((m.annual_return || 0) * 100).toFixed(1) + '%', cls: pctClass(m.annual_return) },
+                { label: 'Sharpe', value: (m.sharpe || 0).toFixed(2), cls: pctClass(m.sharpe) },
+                { label: 'Sortino', value: (m.sortino || 0).toFixed(2), cls: pctClass(m.sortino) },
+                { label: 'Max Drawdown', value: ((m.max_drawdown || 0) * 100).toFixed(1) + '%', cls: 'metric-negative' },
+                { label: 'Volatility', value: ((m.annual_vol || 0) * 100).toFixed(1) + '%', cls: '' },
+                { label: 'Calmar', value: (m.calmar || 0).toFixed(2), cls: pctClass(m.calmar) },
+                { label: 'Win Rate', value: ((m.win_rate || 0) * 100).toFixed(1) + '%', cls: '' },
+                { label: 'Total Return', value: ((m.total_return || 0) * 100).toFixed(1) + '%', cls: pctClass(m.total_return) },
+            ];
+
+            let html = '';
+            for (const c of cards) {
+                html += '<div class="card-sm">' +
+                    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+                        '<span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">' + c.label + '</span>' +
+                        '<span class="info-tip"><span class="tip-content">' + (tipMap[c.label] || '') + '</span></span>' +
+                    '</div>' +
+                    '<p class="metric ' + c.cls + '">' + c.value + '</p>' +
+                '</div>';
+            }
+            document.getElementById('backtest-metrics').innerHTML = html;
+
+            // Plot cumulative returns
+            if (data.cumulative_returns && data.cumulative_returns.length > 0) {
+                const dates = data.cumulative_returns.map(d => d.date);
+                const values = data.cumulative_returns.map(d => d.value);
+                Plotly.newPlot('backtest-chart', [{
+                    x: dates, y: values,
+                    type: 'scatter', mode: 'lines',
+                    line: { color: '#3b82f6', width: 2 },
+                    fill: 'tozeroy', fillcolor: 'rgba(59,130,246,0.08)',
+                }], {
+                    ...DARK_LAYOUT,
+                    yaxis: { ...DARK_LAYOUT.yaxis, title: 'Cumulative Return' },
+                }, PLOTLY_CONFIG);
+            }
+        } else {
+            const panel = document.getElementById('results-panel');
+            panel.style.display = 'block';
+            document.getElementById('backtest-metrics').innerHTML = '<div class="col-span-8" style="color:#ef4444;font-size:13px;">Error: ' + (data.detail || JSON.stringify(data)) + '</div>';
+        }
+    } catch (e) {
+        const panel = document.getElementById('results-panel');
+        panel.style.display = 'block';
+        document.getElementById('backtest-metrics').innerHTML = '<div class="col-span-8" style="color:#ef4444;font-size:13px;">Request failed: ' + e.message + '</div>';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Run Backtest';
+});
+
+// --- Compare Strategies ---
+document.getElementById('btn-compare').addEventListener('click', async function() {
+    const btn = this;
+    const checked = Array.from(document.querySelectorAll('.cmp-check:checked')).map(c => c.value);
+    if (checked.length === 0) {
+        document.getElementById('compare-output').innerHTML = '<p style="color:#f59e0b;">Select at least one strategy to compare.</p>';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Comparing...';
+    document.getElementById('compare-output').innerHTML = '<div class="skeleton" style="height:14px;width:50%;margin-bottom:10px;"></div><div class="skeleton" style="height:14px;width:70%;"></div>';
+
+    const lookback = parseInt(document.getElementById('lookback-input').value) || 63;
+    const txcost = parseFloat(document.getElementById('txcost-input').value) || 5;
+    const tickers = document.getElementById('tickers-input').value.split(',').map(t => t.trim()).filter(Boolean);
+
+    const results = [];
+    for (const strat of checked) {
+        try {
+            const res = await fetch('/api/backtest/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ strategy: strat, lookback: lookback, transaction_cost_bps: txcost, tickers: tickers })
+            });
+            const data = await res.json();
+            if (data.metrics) {
+                results.push({ strategy: strat, ...data.metrics });
+            }
+        } catch (e) {
+            results.push({ strategy: strat, error: e.message });
+        }
+    }
+
+    if (results.length === 0) {
+        document.getElementById('compare-output').innerHTML = '<p style="color:#ef4444;">All backtests failed.</p>';
+    } else {
+        let html = '<div class="fade-in" style="overflow-x:auto;"><table style="width:100%;font-size:13px;border-collapse:collapse;">';
+        html += '<thead><tr style="border-bottom:1px solid #27272a;">';
+        const cols = ['Strategy', 'Return', 'Sharpe', 'Max DD', 'Volatility', 'Sortino', 'Calmar'];
+        for (const col of cols) {
+            html += '<th style="text-align:left;padding:10px 12px 10px 0;font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">' + col + '</th>';
+        }
+        html += '</tr></thead><tbody>';
+
+        for (const r of results) {
+            if (r.error) {
+                html += '<tr style="border-bottom:1px solid rgba(39,39,42,.4);"><td style="padding:10px 12px 10px 0;color:#fafafa;">' + r.strategy.replace(/_/g, ' ') + '</td><td colspan="6" style="color:#ef4444;">Failed: ' + r.error + '</td></tr>';
+            } else {
+                const retCls = pctClass(r.annual_return);
+                const shCls = pctClass(r.sharpe);
+                const soCls = pctClass(r.sortino);
+                const caCls = pctClass(r.calmar);
+                html += '<tr style="border-bottom:1px solid rgba(39,39,42,.4);">' +
+                    '<td style="padding:10px 12px 10px 0;color:#fafafa;font-weight:500;">' + r.strategy.replace(/_/g, ' ') + '</td>' +
+                    '<td style="padding:10px 12px 10px 0;" class="' + retCls + '">' + ((r.annual_return || 0) * 100).toFixed(1) + '%</td>' +
+                    '<td style="padding:10px 12px 10px 0;" class="' + shCls + '">' + (r.sharpe || 0).toFixed(2) + '</td>' +
+                    '<td style="padding:10px 12px 10px 0;" class="metric-negative">' + ((r.max_drawdown || 0) * 100).toFixed(1) + '%</td>' +
+                    '<td style="padding:10px 12px 10px 0;color:#a1a1aa;">' + ((r.annual_vol || 0) * 100).toFixed(1) + '%</td>' +
+                    '<td style="padding:10px 12px 10px 0;" class="' + soCls + '">' + (r.sortino || 0).toFixed(2) + '</td>' +
+                    '<td style="padding:10px 12px 10px 0;" class="' + caCls + '">' + (r.calmar || 0).toFixed(2) + '</td>' +
+                '</tr>';
+            }
+        }
+        html += '</tbody></table></div>';
+        document.getElementById('compare-output').innerHTML = html;
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Compare';
+});
+</script>
+{% endblock %}

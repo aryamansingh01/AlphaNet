@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaNet - Pick Your UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { overflow-x: hidden; }
+        .tab-on { background: #3b82f6; color: #fff; }
+        .tab-off { background: #111827; color: #6b7280; }
+
+        /* ---- STYLE A: Cyber ---- */
+        .cyber-bg { background: linear-gradient(135deg, #0a0a1a 0%, #0d1117 40%, #0a1628 100%); }
+        .cyber-card { background: linear-gradient(135deg, rgba(6,182,212,0.05) 0%, rgba(139,92,246,0.05) 100%); border: 1px solid rgba(6,182,212,0.15); position: relative; overflow: hidden; }
+        .cyber-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 1px; background: linear-gradient(90deg, transparent, #06b6d4, transparent); animation: scanline 3s linear infinite; }
+        @keyframes scanline { to { left: 200%; } }
+        .cyber-glow { box-shadow: 0 0 30px rgba(6,182,212,0.1), inset 0 0 30px rgba(6,182,212,0.03); }
+        .cyber-pulse { animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .cyber-num { background: linear-gradient(180deg, #06b6d4, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .cyber-grid { background-image: linear-gradient(rgba(6,182,212,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,0.03) 1px, transparent 1px); background-size: 40px 40px; }
+        .cyber-gauge { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #1e293b; position: relative; display: flex; align-items: center; justify-content: center; }
+        .cyber-gauge-fill { position: absolute; top: -3px; left: -3px; width: 126px; height: 126px; border-radius: 50%; border: 3px solid transparent; border-top-color: #06b6d4; border-right-color: #06b6d4; }
+        @keyframes countUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .count-up { animation: countUp 0.6s ease-out forwards; }
+
+        /* ---- STYLE B: Glass ---- */
+        .glass-bg { background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
+        .mesh-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(120,60,255,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(59,130,246,0.15) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(236,72,153,0.1) 0%, transparent 50%); pointer-events: none; }
+        .glass-card { background: rgba(255,255,255,0.04); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .glass-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .glass-glow-blue { box-shadow: 0 0 40px rgba(59,130,246,0.15); }
+        .glass-glow-purple { box-shadow: 0 0 40px rgba(139,92,246,0.15); }
+        .glass-btn { background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 12px; transition: all 0.3s; }
+        .glass-btn:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(99,102,241,0.4); }
+        .glass-shimmer { background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%); background-size: 200% 100%; animation: shimmer 2s ease-in-out infinite; }
+        @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+        .float { animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        /* ---- STYLE C: Data Canvas ---- */
+        .canvas-bg { background: #000000; }
+        .heatcell { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; min-height: 60px; transition: all 0.2s; cursor: default; }
+        .heatcell:hover { transform: scale(1.05); z-index: 10; }
+        .canvas-line { height: 2px; background: linear-gradient(90deg, #ef4444, #f59e0b, #22c55e); border-radius: 1px; }
+
+        /* ---- STYLE D: Premium SaaS ---- */
+        .sas-bg { background: #09090b; }
+        .sas-card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; transition: border-color 0.2s; }
+        .sas-card:hover { border-color: #3f3f46; }
+        .sas-skeleton { background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%); background-size: 200% 100%; animation: skeleton 1.5s ease-in-out infinite; border-radius: 6px; }
+        @keyframes skeleton { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+        .sas-badge { font-size: 10px; padding: 2px 8px; border-radius: 9999px; font-weight: 500; }
+        .sas-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+        .sas-dot-pulse { animation: dotpulse 1.5s ease-in-out infinite; }
+        @keyframes dotpulse { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; } 50% { opacity: 0.7; box-shadow: 0 0 0 4px currentColor; } }
+        .sas-toast { position: fixed; bottom: 24px; right: 24px; background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 12px 20px; font-size: 13px; display: flex; align-items: center; gap: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); transform: translateY(100px); opacity: 0; transition: all 0.4s cubic-bezier(0.16,1,0.3,1); z-index: 100; }
+        .sas-toast.show { transform: translateY(0); opacity: 1; }
+        .sas-cmd { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 560px; background: #18181b; border: 1px solid #27272a; border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.7); z-index: 200; display: none; }
+
+        /* Tooltip */
+        .tip { position: relative; cursor: help; display: inline-flex; }
+        .tip .tt { visibility: hidden; opacity: 0; position: absolute; z-index: 50; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 8px 12px; border-radius: 8px; font-size: 11px; line-height: 1.5; width: max-content; max-width: 240px; white-space: normal; transition: opacity 0.15s, visibility 0.15s; pointer-events: none; }
+        .tip:hover .tt { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100">
+
+    <!-- Fixed top bar -->
+    <div class="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-xl border-b border-gray-800 px-6 py-3 flex items-center justify-between">
+        <div>
+            <h1 class="text-lg font-bold text-white">Pick Your Dashboard Style</h1>
+            <p class="text-xs text-gray-500">Each shows the same data. Pick the vibe you want.</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="show('cyber')" id="t-cyber" class="px-4 py-2 rounded-lg text-sm font-medium tab-on transition-all">Cyber Trading</button>
+            <button onclick="show('glass')" id="t-glass" class="px-4 py-2 rounded-lg text-sm font-medium tab-off transition-all">Glass</button>
+            <button onclick="show('canvas')" id="t-canvas" class="px-4 py-2 rounded-lg text-sm font-medium tab-off transition-all">Data Canvas</button>
+            <button onclick="show('sas')" id="t-sas" class="px-4 py-2 rounded-lg text-sm font-medium tab-off transition-all">Premium SaaS</button>
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- A: CYBER TRADING DESK -->
+    <!-- ============================================= -->
+    <div id="s-cyber" class="cyber-bg cyber-grid min-h-screen p-6" style="font-family:'JetBrains Mono',monospace;">
+        <div class="max-w-7xl mx-auto">
+
+        <!-- Gauges + Cards -->
+        <div class="flex gap-6 mb-6 items-start">
+            <!-- Gauge: Sharpe -->
+            <div class="flex flex-col items-center">
+                <div class="cyber-gauge cyber-glow">
+                    <div class="cyber-gauge-fill" style="transform: rotate(192deg);"></div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold cyber-num">2.13</p>
+                        <p class="text-[9px] text-gray-600">SHARPE</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Gauge: VIX -->
+            <div class="flex flex-col items-center">
+                <div class="cyber-gauge" style="border-color: #1e293b;">
+                    <div class="cyber-gauge-fill" style="transform: rotate(120deg); border-top-color: #f59e0b; border-right-color: #f59e0b;"></div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-amber-400">16.9</p>
+                        <p class="text-[9px] text-gray-600">VIX</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Cards -->
+            <div class="flex-1 grid grid-cols-4 gap-3">
+                <div class="cyber-card cyber-glow rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <p class="text-[10px] text-cyan-600 uppercase tracking-widest">REGIME</p>
+                        <span class="cyber-pulse w-2 h-2 rounded-full bg-cyan-400 inline-block"></span>
+                    </div>
+                    <p class="text-xl font-bold text-cyan-400 mt-2 count-up">RISK OFF</p>
+                </div>
+                <div class="cyber-card rounded-lg p-4">
+                    <p class="text-[10px] text-purple-500 uppercase tracking-widest">SIGNAL</p>
+                    <p class="text-xl font-bold text-red-400 mt-2 count-up">SHORT</p>
+                    <p class="text-xs text-gray-600 mt-1">conv: 0.245</p>
+                </div>
+                <div class="cyber-card rounded-lg p-4">
+                    <p class="text-[10px] text-gray-600 uppercase tracking-widest">2s10s</p>
+                    <p class="text-xl font-bold text-red-400 mt-2">-0.20%</p>
+                    <div class="mt-2 h-1 bg-gray-800 rounded-full"><div class="h-1 bg-red-500 rounded-full" style="width:40%"></div></div>
+                </div>
+                <div class="cyber-card rounded-lg p-4">
+                    <p class="text-[10px] text-gray-600 uppercase tracking-widest">HY OAS</p>
+                    <p class="text-xl font-bold text-gray-100 mt-2">295 <span class="text-xs text-gray-600">bps</span></p>
+                    <div class="mt-2 h-1 bg-gray-800 rounded-full"><div class="h-1 bg-cyan-500 rounded-full" style="width:60%"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-5 gap-3 mb-4">
+            <div class="col-span-3 cyber-card rounded-lg p-4 cyber-glow">
+                <p class="text-[10px] text-cyan-600 uppercase tracking-widest mb-2">YIELD CURVE // LIVE</p>
+                <div id="ch-cyber" style="height:280px;"></div>
+            </div>
+            <div class="col-span-2 cyber-card rounded-lg p-4">
+                <p class="text-[10px] text-purple-500 uppercase tracking-widest mb-3">SIGNAL COUNCIL</p>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between p-2 border border-gray-800 rounded bg-green-500/5">
+                        <span class="text-xs text-gray-500">EQUITY</span>
+                        <span class="text-green-400 font-bold text-sm">LONG</span>
+                        <div class="w-16 h-1.5 bg-gray-800 rounded-full"><div class="h-1.5 bg-green-400 rounded-full" style="width:30%"></div></div>
+                    </div>
+                    <div class="flex items-center justify-between p-2 border border-gray-800 rounded bg-red-500/5">
+                        <span class="text-xs text-gray-500">CREDIT</span>
+                        <span class="text-red-400 font-bold text-sm">SHORT</span>
+                        <div class="w-16 h-1.5 bg-gray-800 rounded-full"><div class="h-1.5 bg-red-400 rounded-full" style="width:70%"></div></div>
+                    </div>
+                    <div class="flex items-center justify-between p-2 border border-gray-800 rounded bg-green-500/5">
+                        <span class="text-xs text-gray-500">MACRO</span>
+                        <span class="text-green-400 font-bold text-sm">LONG</span>
+                        <div class="w-16 h-1.5 bg-gray-800 rounded-full"><div class="h-1.5 bg-green-400 rounded-full" style="width:10%"></div></div>
+                    </div>
+                    <div class="flex items-center justify-between p-2 border border-gray-800 rounded bg-amber-500/5">
+                        <span class="text-xs text-gray-500">RISK</span>
+                        <span class="text-amber-400 font-bold text-sm">OK</span>
+                        <div class="w-16 h-1.5 bg-gray-800 rounded-full"><div class="h-1.5 bg-amber-400 rounded-full" style="width:37%"></div></div>
+                    </div>
+                </div>
+                <div class="mt-3 p-3 border border-cyan-800/50 rounded bg-cyan-950/20">
+                    <span class="text-[10px] text-gray-600">FINAL SIGNAL</span>
+                    <span class="text-red-400 font-bold text-lg ml-2">SHORT</span>
+                    <span class="text-cyan-600 text-xs ml-1">// 0.245</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom metrics -->
+        <div class="grid grid-cols-8 gap-2">
+            <div class="cyber-card rounded p-3 text-center"><p class="text-[9px] text-gray-600">RETURN</p><p class="text-sm font-bold text-green-400 mt-1">78.9%</p></div>
+            <div class="cyber-card rounded p-3 text-center"><p class="text-[9px] text-gray-600">SHARPE</p><p class="text-sm font-bold cyber-num mt-1">2.13</p></div>
+            <div class="cyber-card rounded p-3 text-center"><p class="text-[9px] text-gray-600">MAX DD</p><p class="text-sm font-bold text-red-400 mt-1">-19.2%</p></div>
+            <div class="cyber-card rounded p-3 text-center"><p class="text-[9px] text-gray-600">SORTINO</p><p class="text-sm font-bold text-gray-200 mt-1">3.41</p></div>
+            <div class="cyber-card rounded p-3 text-center"><p class="text-[9px] text-gray-600">CALMAR</p><p class="text-sm font-bold text-gray-200 mt-1">4.11</p></div>
+            <div class="cyber-card rounded p-3 text-center"><p class="text-[9px] text-gray-600">VOL</p><p class="text-sm font-bold text-gray-200 mt-1">12.1%</p></div>
+            <div class="cyber-card rounded p-3 text-center"><p class="text-[9px] text-gray-600">WIN RT</p><p class="text-sm font-bold text-gray-200 mt-1">54.3%</p></div>
+            <div class="cyber-card rounded p-3 text-center"><p class="text-[9px] text-gray-600">TOTAL</p><p class="text-sm font-bold text-green-400 mt-1">162%</p></div>
+        </div>
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- B: GLASS DASHBOARD -->
+    <!-- ============================================= -->
+    <div id="s-glass" class="glass-bg min-h-screen p-8 relative hidden" style="font-family:'Inter',sans-serif;">
+        <div class="mesh-overlay"></div>
+        <div class="max-w-7xl mx-auto relative z-10">
+
+        <div class="grid grid-cols-4 gap-5 mb-8">
+            <div class="glass-card p-6 glass-glow-blue float">
+                <p class="text-xs text-gray-400/80 font-medium mb-2">Regime</p>
+                <p class="text-3xl font-bold bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">Risk Off</p>
+                <p class="text-xs text-gray-500 mt-2">GMM-detected market state</p>
+            </div>
+            <div class="glass-card p-6 float" style="animation-delay: 0.5s;">
+                <p class="text-xs text-gray-400/80 font-medium mb-2">Signal</p>
+                <p class="text-3xl font-bold bg-gradient-to-r from-red-400 to-pink-500 bg-clip-text text-transparent">Short</p>
+                <p class="text-xs text-gray-500 mt-2">Conviction: 0.245</p>
+            </div>
+            <div class="glass-card p-6 float" style="animation-delay: 1s;">
+                <p class="text-xs text-gray-400/80 font-medium mb-2">2s10s Spread</p>
+                <p class="text-3xl font-bold text-red-400">-0.20%</p>
+                <p class="text-xs text-red-400/60 mt-2">Curve inverted</p>
+            </div>
+            <div class="glass-card p-6 glass-glow-purple float" style="animation-delay: 1.5s;">
+                <p class="text-xs text-gray-400/80 font-medium mb-2">HY OAS</p>
+                <p class="text-3xl font-bold text-white">2.95</p>
+                <p class="text-xs text-gray-500 mt-2">z-score: -0.88</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6 mb-8">
+            <div class="glass-card p-6">
+                <p class="text-sm font-semibold text-white/80 mb-3">Yield Curve</p>
+                <div id="ch-glass" style="height:280px;"></div>
+            </div>
+            <div class="glass-card p-6">
+                <p class="text-sm font-semibold text-white/80 mb-4">Signal Council</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="rounded-2xl p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/10">
+                        <p class="text-xs text-gray-400">Equity</p>
+                        <p class="text-2xl font-bold text-green-400 mt-2">LONG</p>
+                        <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1 bg-gray-800 rounded-full"><div class="h-1 bg-green-400 rounded-full" style="width:30%"></div></div><span class="text-xs text-gray-500">0.3</span></div>
+                    </div>
+                    <div class="rounded-2xl p-4 bg-gradient-to-br from-red-500/10 to-pink-500/5 border border-red-500/10">
+                        <p class="text-xs text-gray-400">Credit</p>
+                        <p class="text-2xl font-bold text-red-400 mt-2">SHORT</p>
+                        <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1 bg-gray-800 rounded-full"><div class="h-1 bg-red-400 rounded-full" style="width:70%"></div></div><span class="text-xs text-gray-500">0.7</span></div>
+                    </div>
+                    <div class="rounded-2xl p-4 bg-gradient-to-br from-green-500/10 to-teal-500/5 border border-green-500/10">
+                        <p class="text-xs text-gray-400">Macro</p>
+                        <p class="text-2xl font-bold text-green-400 mt-2">LONG</p>
+                        <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1 bg-gray-800 rounded-full"><div class="h-1 bg-green-400 rounded-full" style="width:10%"></div></div><span class="text-xs text-gray-500">0.1</span></div>
+                    </div>
+                    <div class="rounded-2xl p-4 bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border border-amber-500/10">
+                        <p class="text-xs text-gray-400">Risk</p>
+                        <p class="text-2xl font-bold text-amber-400 mt-2">OK</p>
+                        <div class="flex items-center gap-2 mt-2"><div class="flex-1 h-1 bg-gray-800 rounded-full"><div class="h-1 bg-amber-400 rounded-full" style="width:37%"></div></div><span class="text-xs text-gray-500">0.37</span></div>
+                    </div>
+                </div>
+                <div class="mt-4 p-4 rounded-2xl bg-gradient-to-r from-red-500/10 to-purple-500/10 border border-red-500/10 text-center">
+                    <p class="text-xs text-gray-400 mb-1">Final Signal</p>
+                    <p class="text-3xl font-bold bg-gradient-to-r from-red-400 to-pink-400 bg-clip-text text-transparent">SHORT</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-6 gap-3">
+            <div class="glass-card p-4 text-center glass-shimmer"><p class="text-xs text-gray-400">Sharpe</p><p class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mt-1">2.13</p></div>
+            <div class="glass-card p-4 text-center"><p class="text-xs text-gray-400">Return</p><p class="text-2xl font-bold text-green-400 mt-1">78.9%</p></div>
+            <div class="glass-card p-4 text-center"><p class="text-xs text-gray-400">Max DD</p><p class="text-2xl font-bold text-red-400 mt-1">-19.2%</p></div>
+            <div class="glass-card p-4 text-center"><p class="text-xs text-gray-400">Sortino</p><p class="text-2xl font-bold text-white mt-1">3.41</p></div>
+            <div class="glass-card p-4 text-center"><p class="text-xs text-gray-400">Vol</p><p class="text-2xl font-bold text-white mt-1">12.1%</p></div>
+            <div class="glass-card p-4 text-center"><p class="text-xs text-gray-400">Win Rate</p><p class="text-2xl font-bold text-white mt-1">54.3%</p></div>
+        </div>
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- C: DATA CANVAS -->
+    <!-- ============================================= -->
+    <div id="s-canvas" class="canvas-bg min-h-screen p-4 hidden" style="font-family:'Space Grotesk',sans-serif;">
+        <div class="max-w-7xl mx-auto">
+
+        <!-- Heatmap status row -->
+        <div class="grid grid-cols-8 gap-1 mb-4">
+            <div class="heatcell col-span-2 rounded-lg bg-amber-900/40 text-amber-300 border border-amber-800/30">
+                <div class="text-center"><p class="text-[10px] opacity-60">REGIME</p><p class="text-xl font-bold mt-0.5">RISK OFF</p></div>
+            </div>
+            <div class="heatcell col-span-2 rounded-lg bg-red-900/40 text-red-300 border border-red-800/30">
+                <div class="text-center"><p class="text-[10px] opacity-60">SIGNAL</p><p class="text-xl font-bold mt-0.5">SHORT 0.24</p></div>
+            </div>
+            <div class="heatcell rounded-lg bg-red-950/60 text-red-400 border border-red-900/30">
+                <div class="text-center"><p class="text-[10px] opacity-60">2s10s</p><p class="text-lg font-bold">-0.20</p></div>
+            </div>
+            <div class="heatcell rounded-lg bg-blue-950/40 text-blue-300 border border-blue-900/30">
+                <div class="text-center"><p class="text-[10px] opacity-60">HY OAS</p><p class="text-lg font-bold">2.95</p></div>
+            </div>
+            <div class="heatcell rounded-lg bg-green-950/40 text-green-300 border border-green-900/30">
+                <div class="text-center"><p class="text-[10px] opacity-60">VIX</p><p class="text-lg font-bold">16.9</p></div>
+            </div>
+            <div class="heatcell rounded-lg bg-emerald-950/40 text-emerald-300 border border-emerald-900/30">
+                <div class="text-center"><p class="text-[10px] opacity-60">SHARPE</p><p class="text-lg font-bold">2.13</p></div>
+            </div>
+        </div>
+
+        <!-- Fullwidth chart -->
+        <div class="bg-[#050505] rounded-lg p-4 mb-4 border border-gray-900">
+            <div id="ch-canvas" style="height:320px;"></div>
+        </div>
+
+        <!-- Metrics heatmap grid -->
+        <div class="grid grid-cols-8 gap-1 mb-4">
+            <div class="heatcell rounded bg-green-900/30 text-green-300 border border-green-900/20"><div class="text-center"><p class="text-[9px] opacity-50">RETURN</p><p class="font-bold">78.9%</p></div></div>
+            <div class="heatcell rounded bg-cyan-900/30 text-cyan-300 border border-cyan-900/20"><div class="text-center"><p class="text-[9px] opacity-50">SHARPE</p><p class="font-bold">2.13</p></div></div>
+            <div class="heatcell rounded bg-red-900/30 text-red-300 border border-red-900/20"><div class="text-center"><p class="text-[9px] opacity-50">MAX DD</p><p class="font-bold">-19.2%</p></div></div>
+            <div class="heatcell rounded bg-purple-900/30 text-purple-300 border border-purple-900/20"><div class="text-center"><p class="text-[9px] opacity-50">SORTINO</p><p class="font-bold">3.41</p></div></div>
+            <div class="heatcell rounded bg-violet-900/30 text-violet-300 border border-violet-900/20"><div class="text-center"><p class="text-[9px] opacity-50">CALMAR</p><p class="font-bold">4.11</p></div></div>
+            <div class="heatcell rounded bg-indigo-900/30 text-indigo-300 border border-indigo-900/20"><div class="text-center"><p class="text-[9px] opacity-50">VOL</p><p class="font-bold">12.1%</p></div></div>
+            <div class="heatcell rounded bg-teal-900/30 text-teal-300 border border-teal-900/20"><div class="text-center"><p class="text-[9px] opacity-50">WIN RT</p><p class="font-bold">54.3%</p></div></div>
+            <div class="heatcell rounded bg-green-900/30 text-green-300 border border-green-900/20"><div class="text-center"><p class="text-[9px] opacity-50">TOTAL</p><p class="font-bold">162%</p></div></div>
+        </div>
+
+        <!-- Council as horizontal bars -->
+        <div class="bg-[#050505] rounded-lg p-4 border border-gray-900">
+            <p class="text-xs text-gray-600 mb-3">SIGNAL COUNCIL</p>
+            <div class="space-y-2">
+                <div class="flex items-center gap-3"><span class="text-xs text-gray-600 w-14">equity</span><div class="flex-1 h-6 bg-gray-900 rounded relative"><div class="h-6 bg-green-500/30 rounded" style="width:30%"></div><span class="absolute left-2 top-1 text-xs text-green-400 font-bold">LONG 0.3</span></div></div>
+                <div class="flex items-center gap-3"><span class="text-xs text-gray-600 w-14">credit</span><div class="flex-1 h-6 bg-gray-900 rounded relative"><div class="h-6 bg-red-500/30 rounded" style="width:70%"></div><span class="absolute left-2 top-1 text-xs text-red-400 font-bold">SHORT 0.7</span></div></div>
+                <div class="flex items-center gap-3"><span class="text-xs text-gray-600 w-14">macro</span><div class="flex-1 h-6 bg-gray-900 rounded relative"><div class="h-6 bg-green-500/30 rounded" style="width:10%"></div><span class="absolute left-2 top-1 text-xs text-green-400 font-bold">LONG 0.1</span></div></div>
+                <div class="flex items-center gap-3"><span class="text-xs text-gray-600 w-14">risk</span><div class="flex-1 h-6 bg-gray-900 rounded relative"><div class="h-6 bg-amber-500/30 rounded" style="width:37%"></div><span class="absolute left-2 top-1 text-xs text-amber-400 font-bold">OK 0.37</span></div></div>
+            </div>
+            <div class="canvas-line mt-3"></div>
+            <p class="text-xs text-gray-600 mt-2">result: <span class="text-red-400 font-bold">SHORT</span> | conviction: 0.245</p>
+        </div>
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- D: PREMIUM SAAS -->
+    <!-- ============================================= -->
+    <div id="s-sas" class="sas-bg min-h-screen hidden" style="font-family:'Inter',sans-serif;">
+        <!-- Sidebar + content layout -->
+        <div class="flex min-h-screen">
+            <!-- Mini sidebar -->
+            <div class="w-14 bg-[#0f0f11] border-r border-zinc-800 flex flex-col items-center py-4 gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white text-xs font-bold">A</div>
+                <div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></div>
+                <div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg></div>
+                <div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+            </div>
+
+            <div class="flex-1 p-6">
+                <!-- Top bar -->
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-sm font-semibold text-zinc-100">Market Intelligence</h2>
+                        <span class="sas-badge bg-blue-500/10 text-blue-400 border border-blue-500/20">BACKTEST</span>
+                        <span class="sas-dot sas-dot-pulse bg-green-400 text-green-400"></span>
+                        <span class="text-xs text-zinc-500">Live</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="document.getElementById('sas-cmd-palette').style.display='block'" class="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-xs text-zinc-400 hover:text-white transition-colors">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            Search... <span class="text-zinc-600 ml-4">Cmd+K</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cards -->
+                <div class="grid grid-cols-4 gap-3 mb-6">
+                    <div class="sas-card p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-xs text-zinc-500">Regime</p>
+                            <span class="tip"><span class="w-4 h-4 inline-flex items-center justify-center rounded-full border border-zinc-700 text-zinc-500 text-[10px]">?</span><span class="tt bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-lg shadow-2xl">GMM-classified market state</span></span>
+                        </div>
+                        <p class="text-xl font-semibold text-amber-400">Risk Off</p>
+                        <div class="flex items-center gap-1.5 mt-2"><span class="sas-dot bg-amber-400"></span><span class="text-xs text-zinc-500">Since 3d ago</span></div>
+                    </div>
+                    <div class="sas-card p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-xs text-zinc-500">Signal</p>
+                            <span class="sas-badge bg-red-500/10 text-red-400">Bearish</span>
+                        </div>
+                        <p class="text-xl font-semibold text-red-400">Short</p>
+                        <p class="text-xs text-zinc-600 mt-2">Conviction: 0.245</p>
+                    </div>
+                    <div class="sas-card p-4">
+                        <p class="text-xs text-zinc-500 mb-2">2s10s Spread</p>
+                        <p class="text-xl font-semibold text-red-400">-0.20%</p>
+                        <p class="text-xs text-red-400/60 mt-2">Inverted</p>
+                    </div>
+                    <div class="sas-card p-4">
+                        <p class="text-xs text-zinc-500 mb-2">HY OAS</p>
+                        <p class="text-xl font-semibold text-zinc-100">2.95</p>
+                        <p class="text-xs text-zinc-600 mt-2">z: -0.88</p>
+                    </div>
+                </div>
+
+                <!-- Chart + Council -->
+                <div class="grid grid-cols-5 gap-3 mb-6">
+                    <div class="col-span-3 sas-card p-5">
+                        <p class="text-xs text-zinc-500 mb-3">Yield Curve</p>
+                        <div id="ch-sas" style="height:260px;"></div>
+                    </div>
+                    <div class="col-span-2 sas-card p-5">
+                        <p class="text-xs text-zinc-500 mb-3">Signal Council</p>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between py-2 border-b border-zinc-800"><span class="text-xs text-zinc-500">Equity</span><span class="text-green-400 font-medium text-sm">LONG</span><span class="text-xs text-zinc-600">0.30</span></div>
+                            <div class="flex items-center justify-between py-2 border-b border-zinc-800"><span class="text-xs text-zinc-500">Credit</span><span class="text-red-400 font-medium text-sm">SHORT</span><span class="text-xs text-zinc-600">0.70</span></div>
+                            <div class="flex items-center justify-between py-2 border-b border-zinc-800"><span class="text-xs text-zinc-500">Macro</span><span class="text-green-400 font-medium text-sm">LONG</span><span class="text-xs text-zinc-600">0.10</span></div>
+                            <div class="flex items-center justify-between py-2 border-b border-zinc-800"><span class="text-xs text-zinc-500">Risk</span><span class="text-amber-400 font-medium text-sm">APPROVED</span><span class="text-xs text-zinc-600">0.37</span></div>
+                        </div>
+                        <div class="mt-4 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700 flex items-center justify-between">
+                            <span class="text-xs text-zinc-500">Final</span>
+                            <span class="text-red-400 font-bold">SHORT</span>
+                            <span class="text-xs text-zinc-600">0.245</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics -->
+                <div class="grid grid-cols-6 gap-3">
+                    <div class="sas-card p-3 text-center"><p class="text-[10px] text-zinc-500">Sharpe</p><p class="text-lg font-semibold text-zinc-100 mt-1">2.13</p></div>
+                    <div class="sas-card p-3 text-center"><p class="text-[10px] text-zinc-500">Return</p><p class="text-lg font-semibold text-green-400 mt-1">78.9%</p></div>
+                    <div class="sas-card p-3 text-center"><p class="text-[10px] text-zinc-500">Max DD</p><p class="text-lg font-semibold text-red-400 mt-1">-19.2%</p></div>
+                    <div class="sas-card p-3 text-center"><p class="text-[10px] text-zinc-500">Sortino</p><p class="text-lg font-semibold text-zinc-100 mt-1">3.41</p></div>
+                    <div class="sas-card p-3 text-center"><p class="text-[10px] text-zinc-500">Vol</p><p class="text-lg font-semibold text-zinc-100 mt-1">12.1%</p></div>
+                    <div class="sas-card p-3 text-center"><p class="text-[10px] text-zinc-500">Win Rate</p><p class="text-lg font-semibold text-zinc-100 mt-1">54.3%</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Command Palette -->
+        <div id="sas-cmd-palette" class="sas-cmd" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+            <div class="p-4 border-b border-zinc-800">
+                <input type="text" placeholder="Search tickers, strategies, metrics..." class="w-full bg-transparent text-zinc-100 text-sm outline-none placeholder-zinc-500" autofocus>
+            </div>
+            <div class="p-2 text-xs text-zinc-500">
+                <div class="p-2 rounded hover:bg-zinc-800 cursor-pointer">SPY - SPDR S&P 500 ETF</div>
+                <div class="p-2 rounded hover:bg-zinc-800 cursor-pointer">TLT - iShares 20+ Year Treasury</div>
+                <div class="p-2 rounded hover:bg-zinc-800 cursor-pointer">Run Momentum Backtest</div>
+                <div class="p-2 rounded hover:bg-zinc-800 cursor-pointer">View Yield Curve</div>
+            </div>
+        </div>
+
+        <!-- Toast notification -->
+        <div id="sas-toast-el" class="sas-toast">
+            <span class="sas-dot bg-green-400"></span>
+            <span class="text-zinc-300">Signal updated: SHORT (0.245)</span>
+        </div>
+    </div>
+
+    <script>
+    const labels = ['1M','3M','6M','1Y','2Y','3Y','5Y','7Y','10Y','20Y','30Y'];
+    const yields = [5.3, 5.25, 5.1, 4.9, 4.5, 4.3, 4.2, 4.25, 4.3, 4.5, 4.6];
+    const CFG = { responsive: true, displayModeBar: false };
+
+    function show(id) {
+        ['cyber','glass','canvas','sas'].forEach(s => {
+            document.getElementById('s-' + s).classList.toggle('hidden', s !== id);
+            document.getElementById('t-' + s).className = 'px-4 py-2 rounded-lg text-sm font-medium transition-all ' + (s === id ? 'tab-on' : 'tab-off');
+        });
+        renderChart(id);
+        if (id === 'sas') { setTimeout(() => { const t = document.getElementById('sas-toast-el'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }, 500); }
+    }
+
+    function renderChart(id) {
+        const configs = {
+            cyber: { el: 'ch-cyber', color: '#06b6d4', fill: 'rgba(6,182,212,0.08)', font: 'JetBrains Mono', gridColor: '#0d2137' },
+            glass: { el: 'ch-glass', color: '#818cf8', fill: 'rgba(129,140,248,0.1)', font: 'Inter', gridColor: '#1e1b4b' },
+            canvas: { el: 'ch-canvas', color: '#6b7280', fill: 'rgba(107,114,128,0.05)', font: 'Space Grotesk', gridColor: '#111' },
+            sas: { el: 'ch-sas', color: '#71717a', fill: 'rgba(113,113,122,0.05)', font: 'Inter', gridColor: '#1c1c1e' },
+        };
+        const c = configs[id]; if (!c) return;
+        Plotly.newPlot(c.el, [{ x: labels, y: yields, type: 'scatter', mode: 'lines+markers', line: { color: c.color, width: 2, shape: id === 'glass' ? 'spline' : 'linear' }, marker: { size: id === 'canvas' ? 3 : 5 }, fill: 'tozeroy', fillcolor: c.fill }], {
+            paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { color: '#4b5563', size: 10, family: c.font }, margin: { t: 5, r: 10, b: 25, l: 35 }, xaxis: { gridcolor: c.gridColor }, yaxis: { gridcolor: c.gridColor },
+        }, CFG);
+    }
+
+    renderChart('cyber');
+    </script>
+</body>
+</html>

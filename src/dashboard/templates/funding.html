@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} - Funding Stress{% endblock %}
+{% block page_title %}Funding Stress{% endblock %}
+
+{% block content %}
+
+<!-- Alert Banner -->
+<div id="stress-alert" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px 16px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span id="alert-text" style="font-size:13px;color:#ef4444;font-weight:500;"></span>
+    </div>
+</div>
+
+<!-- Row 1: Composite Score + Summary -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <!-- Composite Score (large) -->
+    <div class="card" style="grid-column:span 1;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Composite Stress</span>
+            <span class="info-tip" data-tip="Equal-weighted average z-score across all funding stress indicators. Below 0 = calm, 0-1 = elevated, above 1 = stressed."></span>
+        </div>
+        <div id="composite-score" style="display:flex;align-items:baseline;gap:8px;">
+            <div class="skeleton" style="height:36px;width:60px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Stressed Indicators</span>
+            <span class="info-tip" data-tip="Number of indicators with z-score above 1.5 (significantly elevated)."></span>
+        </div>
+        <div id="stressed-count">
+            <div class="skeleton" style="height:24px;width:40px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">SOFR</span>
+            <span class="info-tip" data-tip="Secured Overnight Financing Rate. The benchmark short-term interest rate."></span>
+        </div>
+        <div id="sofr-val">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+
+    <div class="card-sm">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Data Source</span>
+            <span class="info-tip" data-tip="Whether data is from FRED (live) or synthetic fallback."></span>
+        </div>
+        <div id="data-source">
+            <div class="skeleton" style="height:24px;width:80px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Indicator Cards -->
+<div class="card mb-6">
+    <p class="section-hdr" style="margin-bottom:12px;">Stress Indicators</p>
+    <div id="indicator-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card-sm"><div class="skeleton" style="height:60px;width:100%;"></div></div>
+        <div class="card-sm"><div class="skeleton" style="height:60px;width:100%;"></div></div>
+        <div class="card-sm"><div class="skeleton" style="height:60px;width:100%;"></div></div>
+        <div class="card-sm"><div class="skeleton" style="height:60px;width:100%;"></div></div>
+    </div>
+</div>
+
+<!-- Row 3: History Chart -->
+<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <p class="section-hdr" style="margin:0;">Composite Stress Score History</p>
+        <span class="info-tip" data-tip="Time series of the equal-weighted composite z-score. Red zone (above 1) indicates elevated funding stress."></span>
+    </div>
+    <div id="stress-history-chart" style="width:100%;height:340px;">
+        <div class="skeleton" style="height:100%;width:100%;"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadFundingStress() {
+    try {
+        const res = await fetch('/api/funding/stress');
+        const data = await res.json();
+
+        // Composite score
+        const cVal = data.composite_score !== undefined ? data.composite_score : data.composite;
+        if (cVal !== undefined) {
+            const c = cVal;
+            let scoreColor = '#22c55e';
+            let label = 'Calm';
+            if (c > 1) { scoreColor = '#ef4444'; label = 'Stressed'; }
+            else if (c > 0) { scoreColor = '#f59e0b'; label = 'Elevated'; }
+
+            document.getElementById('composite-score').innerHTML =
+                '<span style="font-size:32px;font-weight:700;color:' + scoreColor + ';font-variant-numeric:tabular-nums;">' + c.toFixed(2) + '</span>' +
+                '<span class="' + (c > 1 ? 'badge-red' : c > 0 ? 'badge-amber' : 'badge-green') + '">' + label + '</span>';
+        }
+
+        // Data source
+        if (data.source) {
+            const srcBadge = data.source === 'live' ? 'badge-green' : 'badge-blue';
+            document.getElementById('data-source').innerHTML =
+                '<span class="' + srcBadge + '" style="font-size:12px;padding:3px 10px;">' + data.source.toUpperCase() + '</span>';
+        } else {
+            document.getElementById('data-source').innerHTML =
+                '<span class="badge-blue" style="font-size:12px;padding:3px 10px;">FRED</span>';
+        }
+
+        // Alerts
+        const alerts = data.alerts || [];
+        if (alerts.length > 0) {
+            const alertEl = document.getElementById('stress-alert');
+            alertEl.style.display = 'block';
+            const names = alerts.map(a => a.indicator.toUpperCase()).join(', ');
+            document.getElementById('alert-text').textContent =
+                alerts.length + ' indicator(s) above stress threshold: ' + names;
+        }
+
+        document.getElementById('stressed-count').innerHTML =
+            '<span class="metric" style="color:' + (alerts.length > 0 ? '#ef4444' : '#22c55e') + ';">' + alerts.length + '</span>';
+
+        // Indicator cards -- handle both list-of-dicts and dict formats
+        const rawIndicators = data.indicators || [];
+        let grid = '';
+
+        if (Array.isArray(rawIndicators)) {
+            // List-of-dicts format: [{name, value, z_score}, ...]
+            for (const ind of rawIndicators) {
+                const name = ind.name || '';
+                const value = ind.value || 0;
+                const z = ind.z_score || 0;
+                const zColor = Math.abs(z) > 1.5 ? '#ef4444' : Math.abs(z) > 0.5 ? '#f59e0b' : '#22c55e';
+                const barWidth = Math.min(Math.abs(z) / 3 * 100, 100);
+                const barColor = z > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)';
+                const displayName = name.replace(/_/g, ' ').toUpperCase();
+
+                if (name === 'sofr') {
+                    document.getElementById('sofr-val').innerHTML =
+                        '<span class="metric" style="color:#fafafa;">' + value.toFixed(2) + '%</span>';
+                }
+
+                grid += '<div class="card-sm">' +
+                    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+                    '<span style="font-size:11px;font-weight:500;color:#71717a;">' + displayName + '</span>' +
+                    '<span style="font-size:11px;font-weight:600;color:' + zColor + ';">z: ' + z.toFixed(2) + '</span>' +
+                    '</div>' +
+                    '<p style="font-size:16px;font-weight:600;color:#fafafa;margin-bottom:8px;">' + value.toFixed(3) + '</p>' +
+                    '<div style="height:4px;background:#27272a;border-radius:2px;overflow:hidden;">' +
+                    '<div style="height:100%;width:' + barWidth + '%;background:' + barColor + ';border-radius:2px;transition:width 0.5s;"></div>' +
+                    '</div></div>';
+            }
+        } else {
+            // Dict format: {name: value, ...}
+            const zScores = data.z_scores || {};
+            for (const [name, value] of Object.entries(rawIndicators)) {
+                const z = zScores[name] || 0;
+                const zColor = Math.abs(z) > 1.5 ? '#ef4444' : Math.abs(z) > 0.5 ? '#f59e0b' : '#22c55e';
+                const barWidth = Math.min(Math.abs(z) / 3 * 100, 100);
+                const barColor = z > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)';
+                const displayName = name.replace(/_/g, ' ').toUpperCase();
+
+                if (name === 'sofr') {
+                    document.getElementById('sofr-val').innerHTML =
+                        '<span class="metric" style="color:#fafafa;">' + (typeof value === 'number' ? value.toFixed(2) + '%' : '--') + '</span>';
+                }
+
+                grid += '<div class="card-sm">' +
+                    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+                    '<span style="font-size:11px;font-weight:500;color:#71717a;">' + displayName + '</span>' +
+                    '<span style="font-size:11px;font-weight:600;color:' + zColor + ';">z: ' + z.toFixed(2) + '</span>' +
+                    '</div>' +
+                    '<p style="font-size:16px;font-weight:600;color:#fafafa;margin-bottom:8px;">' + (typeof value === 'number' ? value.toFixed(3) : '--') + '</p>' +
+                    '<div style="height:4px;background:#27272a;border-radius:2px;overflow:hidden;">' +
+                    '<div style="height:100%;width:' + barWidth + '%;background:' + barColor + ';border-radius:2px;transition:width 0.5s;"></div>' +
+                    '</div></div>';
+            }
+        }
+
+        document.getElementById('indicator-grid').innerHTML = grid;
+
+    } catch (e) {
+        document.getElementById('composite-score').innerHTML =
+            '<span class="metric" style="color:#ef4444;">Error</span>';
+    }
+}
+
+async function loadFundingHistory() {
+    try {
+        const res = await fetch('/api/funding/history');
+        const data = await res.json();
+
+        if (data.history && data.history.length > 0) {
+            const dates = data.history.map(h => h.date);
+            const scores = data.history.map(h => h.score !== undefined ? h.score : h.composite);
+
+            Plotly.newPlot('stress-history-chart', [{
+                x: dates, y: scores,
+                type: 'scatter', mode: 'lines',
+                line: { color: '#3b82f6', width: 2 },
+                fill: 'tozeroy',
+                fillcolor: 'rgba(59,130,246,0.08)',
+            }, {
+                x: dates, y: dates.map(() => 1),
+                type: 'scatter', mode: 'lines',
+                line: { color: 'rgba(239,68,68,0.4)', width: 1, dash: 'dash' },
+                showlegend: false,
+            }, {
+                x: dates, y: dates.map(() => 0),
+                type: 'scatter', mode: 'lines',
+                line: { color: '#3f3f46', width: 1, dash: 'dash' },
+                showlegend: false,
+            }], {
+                ...DARK_LAYOUT,
+                yaxis: { ...DARK_LAYOUT.yaxis, title: 'Composite Z-Score' },
+                showlegend: false,
+                margin: { t: 10, r: 12, b: 40, l: 50 },
+                shapes: [{
+                    type: 'rect', xref: 'paper', yref: 'y',
+                    x0: 0, x1: 1, y0: 1, y1: 3,
+                    fillcolor: 'rgba(239,68,68,0.04)', line: { width: 0 },
+                }],
+            }, PLOTLY_CONFIG);
+        }
+    } catch (e) {
+        document.getElementById('stress-history-chart').innerHTML =
+            '<p style="color:#ef4444;font-size:13px;padding:16px;">Failed to load history: ' + e.message + '</p>';
+    }
+}
+
+loadFundingStress();
+loadFundingHistory();
+</script>
+{% endblock %}

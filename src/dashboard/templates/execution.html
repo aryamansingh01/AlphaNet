@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} - Execution{% endblock %}
+{% block page_title %}Execution{% endblock %}
+
+{% block content %}
+
+<!-- Account Overview -->
+<p class="text-xs font-medium text-[#71717a] uppercase tracking-[0.05em] mb-3">Account Overview</p>
+<div class="grid grid-cols-4 gap-3 mb-6">
+    <div class="card-sm">
+        <div class="flex items-center gap-1.5 mb-2">
+            <p class="text-[11px] font-medium text-[#71717a]">Equity</p>
+            <span class="info-tip"><span class="tip-content">Total account value including all positions at current market price</span></span>
+        </div>
+        <p id="acct-equity" class="text-xl font-semibold text-[#fafafa]" style="font-variant-numeric:tabular-nums;">
+            <span class="skeleton inline-block w-24 h-6"></span>
+        </p>
+    </div>
+    <div class="card-sm">
+        <div class="flex items-center gap-1.5 mb-2">
+            <p class="text-[11px] font-medium text-[#71717a]">Cash</p>
+            <span class="info-tip"><span class="tip-content">Available settled cash in the account</span></span>
+        </div>
+        <p id="acct-cash" class="text-xl font-semibold text-[#fafafa]" style="font-variant-numeric:tabular-nums;">
+            <span class="skeleton inline-block w-24 h-6"></span>
+        </p>
+    </div>
+    <div class="card-sm">
+        <div class="flex items-center gap-1.5 mb-2">
+            <p class="text-[11px] font-medium text-[#71717a]">Buying Power</p>
+            <span class="info-tip"><span class="tip-content">Maximum dollar amount available to open new positions</span></span>
+        </div>
+        <p id="acct-buying-power" class="text-xl font-semibold text-[#fafafa]" style="font-variant-numeric:tabular-nums;">
+            <span class="skeleton inline-block w-24 h-6"></span>
+        </p>
+    </div>
+    <div class="card-sm">
+        <div class="flex items-center gap-1.5 mb-2">
+            <p class="text-[11px] font-medium text-[#71717a]">Day P&L</p>
+            <span class="info-tip"><span class="tip-content">Profit or loss since market open today</span></span>
+        </div>
+        <p id="acct-pnl" class="text-xl font-semibold" style="font-variant-numeric:tabular-nums;">
+            <span class="skeleton inline-block w-24 h-6"></span>
+        </p>
+    </div>
+</div>
+
+<!-- Positions + Execute -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+
+    <!-- Positions Table -->
+    <div class="col-span-2 card">
+        <div class="flex items-center justify-between mb-4">
+            <p class="text-xs font-medium text-[#71717a] uppercase tracking-[0.05em]">Open Positions</p>
+            <button id="btn-close-all" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/20 hover:bg-[#ef4444]/20 transition-colors">
+                Close All
+            </button>
+        </div>
+        <div id="positions-table">
+            <div class="space-y-2">
+                <div class="skeleton h-8 w-full"></div>
+                <div class="skeleton h-8 w-full"></div>
+                <div class="skeleton h-8 w-3/4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Execute Panel -->
+    <div class="card">
+        <p class="text-xs font-medium text-[#71717a] uppercase tracking-[0.05em] mb-4">Execute Order</p>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-[11px] font-medium text-[#52525b] mb-1">Symbol</label>
+                <input id="exec-symbol" type="text" placeholder="SPY"
+                       class="w-full bg-[#09090b] text-[#fafafa] rounded-lg px-3 py-2 text-sm border border-[#27272a] focus:border-[#3f3f46] focus:outline-none uppercase placeholder-[#3f3f46]">
+            </div>
+            <div>
+                <label class="block text-[11px] font-medium text-[#52525b] mb-1">Quantity</label>
+                <input id="exec-qty" type="number" value="1" min="1" step="1"
+                       class="w-full bg-[#09090b] text-[#fafafa] rounded-lg px-3 py-2 text-sm border border-[#27272a] focus:border-[#3f3f46] focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-[11px] font-medium text-[#52525b] mb-1">Side</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="side-buy" onclick="setSide('buy')" class="py-2 rounded-lg text-sm font-medium bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20">Buy</button>
+                    <button id="side-sell" onclick="setSide('sell')" class="py-2 rounded-lg text-sm font-medium bg-[#27272a] text-[#71717a] border border-[#27272a]">Sell</button>
+                </div>
+            </div>
+            <button id="btn-execute" class="btn-primary w-full mt-1">Submit Order</button>
+            <div id="exec-result" class="text-sm"></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedSide = 'buy';
+function setSide(side) {
+    selectedSide = side;
+    const buy = document.getElementById('side-buy');
+    const sell = document.getElementById('side-sell');
+    if (side === 'buy') {
+        buy.className = 'py-2 rounded-lg text-sm font-medium bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20';
+        sell.className = 'py-2 rounded-lg text-sm font-medium bg-[#27272a] text-[#71717a] border border-[#27272a]';
+    } else {
+        sell.className = 'py-2 rounded-lg text-sm font-medium bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/20';
+        buy.className = 'py-2 rounded-lg text-sm font-medium bg-[#27272a] text-[#71717a] border border-[#27272a]';
+    }
+}
+
+async function loadAccount() {
+    try {
+        const res = await fetch('/api/portfolio/pnl');
+        const data = await res.json();
+        const fmt = (v) => { const n = parseFloat(v); return isNaN(n) ? v : '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+
+        document.getElementById('acct-equity').textContent = fmt(data.equity);
+        document.getElementById('acct-cash').textContent = fmt(data.cash);
+        document.getElementById('acct-buying-power').textContent = fmt(data.buying_power);
+
+        const pnl = parseFloat(data.pnl);
+        const pnlEl = document.getElementById('acct-pnl');
+        pnlEl.textContent = (pnl >= 0 ? '+' : '') + fmt(data.pnl);
+        pnlEl.className = 'text-xl font-semibold ' + (pnl >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]');
+    } catch (e) {
+        ['acct-equity','acct-cash','acct-buying-power','acct-pnl'].forEach(id => {
+            document.getElementById(id).textContent = 'Unavailable';
+            document.getElementById(id).className = 'text-xl font-semibold text-[#52525b]';
+        });
+    }
+}
+
+async function loadPositions() {
+    try {
+        const res = await fetch('/api/portfolio/positions');
+        const data = await res.json();
+
+        if (data.positions && data.positions.length > 0) {
+            let html = '<table class="w-full text-[13px]"><thead><tr class="border-b border-[#27272a]">';
+            html += '<th class="text-left py-2 pr-3 text-[#52525b] font-medium">Symbol</th>';
+            html += '<th class="text-right py-2 pr-3 text-[#52525b] font-medium">Qty</th>';
+            html += '<th class="text-right py-2 pr-3 text-[#52525b] font-medium">Mkt Value</th>';
+            html += '<th class="text-right py-2 text-[#52525b] font-medium">P&L</th>';
+            html += '</tr></thead><tbody>';
+            for (const p of data.positions) {
+                const pnl = parseFloat(p.unrealized_pnl || p.unrealized_pl || 0);
+                const pnlPct = parseFloat(p.pnl_pct || 0) * 100;
+                html += `<tr class="border-b border-[#27272a]/50 hover:bg-[#18181b]">
+                    <td class="py-2.5 pr-3 text-[#fafafa] font-medium">${p.symbol}</td>
+                    <td class="py-2.5 pr-3 text-[#a1a1aa] text-right" style="font-variant-numeric:tabular-nums">${p.qty}</td>
+                    <td class="py-2.5 pr-3 text-[#a1a1aa] text-right" style="font-variant-numeric:tabular-nums">$${parseFloat(p.market_value||0).toLocaleString()}</td>
+                    <td class="py-2.5 text-right font-medium ${pnl>=0?'text-[#22c55e]':'text-[#ef4444]'}" style="font-variant-numeric:tabular-nums">${pnl>=0?'+':''}$${pnl.toFixed(2)} <span class="text-[#52525b] text-xs">${pnlPct>=0?'+':''}${pnlPct.toFixed(1)}%</span></td>
+                </tr>`;
+            }
+            html += '</tbody></table>';
+            document.getElementById('positions-table').innerHTML = html;
+        } else {
+            document.getElementById('positions-table').innerHTML = '<div class="text-center py-8"><p class="text-[#52525b] text-sm">No open positions</p><p class="text-[#3f3f46] text-xs mt-1">Execute an order to get started</p></div>';
+        }
+    } catch (e) {
+        document.getElementById('positions-table').innerHTML = '<p class="text-[#ef4444] text-sm">Failed to load positions. Check Alpaca API keys.</p>';
+    }
+}
+
+document.getElementById('btn-execute').addEventListener('click', async function() {
+    const btn = this;
+    const symbol = document.getElementById('exec-symbol').value.trim().toUpperCase();
+    const qty = parseInt(document.getElementById('exec-qty').value);
+    const resultEl = document.getElementById('exec-result');
+
+    if (!symbol) { resultEl.innerHTML = '<p class="text-[#f59e0b] text-xs">Enter a symbol</p>'; return; }
+    if (!qty || qty < 1) { resultEl.innerHTML = '<p class="text-[#f59e0b] text-xs">Enter valid quantity</p>'; return; }
+
+    btn.disabled = true; btn.textContent = 'Submitting...'; btn.classList.add('opacity-50');
+    resultEl.innerHTML = '';
+
+    try {
+        const res = await fetch('/api/portfolio/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol, qty, side: selectedSide })
+        });
+        const data = await res.json();
+        if (data.action) {
+            resultEl.innerHTML = `<p class="text-[#22c55e] text-xs mt-2">Order submitted: ${selectedSide.toUpperCase()} ${qty} ${symbol}</p>`;
+            if (typeof showToast === 'function') showToast(`Order: ${selectedSide.toUpperCase()} ${qty} ${symbol}`);
+            setTimeout(() => { loadAccount(); loadPositions(); }, 1500);
+        } else {
+            resultEl.innerHTML = '<p class="text-[#ef4444] text-xs mt-2">' + (data.detail || 'Order failed') + '</p>';
+        }
+    } catch (e) {
+        resultEl.innerHTML = '<p class="text-[#ef4444] text-xs mt-2">Request failed</p>';
+    }
+    btn.disabled = false; btn.textContent = 'Submit Order'; btn.classList.remove('opacity-50');
+});
+
+document.getElementById('btn-close-all').addEventListener('click', async function() {
+    if (!confirm('Close ALL positions?')) return;
+    const btn = this; btn.disabled = true; btn.textContent = 'Closing...';
+    try {
+        const res = await fetch('/api/portfolio/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ close_all: true })
+        });
+        const data = await res.json();
+        if (data.action === 'close_all') {
+            if (typeof showToast === 'function') showToast('All positions closed');
+            setTimeout(() => { loadAccount(); loadPositions(); }, 1500);
+        }
+    } catch (e) {}
+    btn.disabled = false; btn.textContent = 'Close All';
+});
+
+loadAccount();
+loadPositions();
+</script>
+{% endblock %}

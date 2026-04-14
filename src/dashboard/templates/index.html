@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaNet</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <nav class="border-b border-gray-800 px-6 py-4">
+        <div class="flex items-center justify-between max-w-7xl mx-auto">
+            <h1 class="text-2xl font-bold text-white tracking-tight">AlphaNet</h1>
+            <div class="flex items-center gap-6 text-sm">
+                <span class="px-3 py-1 rounded text-xs font-mono
+                    {% if mode == 'paper_trade' %}bg-green-900 text-green-300
+                    {% else %}bg-blue-900 text-blue-300{% endif %}">
+                    {{ mode | upper }}
+                </span>
+                <a href="/" class="text-gray-400 hover:text-white">Dashboard</a>
+                <a href="/docs" class="text-gray-400 hover:text-white">API Docs</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+
+        <!-- Status Bar -->
+        <div class="grid grid-cols-4 gap-4 mb-8">
+            <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+                <p class="text-xs text-gray-500 uppercase tracking-wide">Regime</p>
+                <p id="regime-display" class="text-lg font-semibold mt-1">Loading...</p>
+            </div>
+            <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+                <p class="text-xs text-gray-500 uppercase tracking-wide">Signal Direction</p>
+                <p id="signal-display" class="text-lg font-semibold mt-1">--</p>
+            </div>
+            <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+                <p class="text-xs text-gray-500 uppercase tracking-wide">2s10s Spread</p>
+                <p id="spread-2s10s" class="text-lg font-semibold mt-1">--</p>
+            </div>
+            <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+                <p class="text-xs text-gray-500 uppercase tracking-wide">
+                    {% if mode == 'paper_trade' %}Portfolio P&L{% else %}HY OAS{% endif %}
+                </p>
+                <p id="hy-oas-display" class="text-lg font-semibold mt-1">--</p>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-2 gap-6 mb-8">
+            <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+                <h2 class="text-sm font-semibold text-gray-400 mb-4">Yield Curve</h2>
+                <div id="curve-chart" class="h-64"></div>
+            </div>
+            <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+                <h2 class="text-sm font-semibold text-gray-400 mb-4">Credit Spreads</h2>
+                <div id="spread-chart" class="h-64"></div>
+            </div>
+        </div>
+
+        <!-- Signal Council -->
+        <div class="bg-gray-900 rounded-lg p-6 border border-gray-800 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-semibold text-gray-400">Signal Council</h2>
+                <button id="btn-council" class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                    Run Analysis
+                </button>
+            </div>
+            <div id="council-output" class="text-sm text-gray-300 space-y-3">
+                <p class="text-gray-600">Click "Run Analysis" to score current market conditions...</p>
+            </div>
+        </div>
+
+        <!-- Backtest Panel -->
+        {% if mode != 'paper_trade' %}
+        <div class="bg-gray-900 rounded-lg p-6 border border-gray-800 mb-8">
+            <h2 class="text-sm font-semibold text-gray-400 mb-4">Backtesting</h2>
+            <div class="flex gap-4 mb-4">
+                <select id="strategy-select" class="bg-gray-800 text-gray-200 rounded px-3 py-2 text-sm border border-gray-700">
+                    <option value="momentum">Equity Momentum</option>
+                    <option value="cross_sectional">Cross-Sectional Momentum</option>
+                    <option value="mean_reversion">Mean Reversion</option>
+                </select>
+                <button id="btn-backtest" class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                    Run Backtest
+                </button>
+            </div>
+            <div id="backtest-metrics" class="text-sm text-gray-300 mb-4"></div>
+            <div id="backtest-chart" class="h-64"></div>
+        </div>
+        {% endif %}
+
+        {% if mode == 'paper_trade' %}
+        <div class="bg-gray-900 rounded-lg p-6 border border-gray-800 mb-8">
+            <h2 class="text-sm font-semibold text-gray-400 mb-4">Paper Trading</h2>
+            <div id="portfolio-display" class="text-sm text-gray-300">
+                <p class="text-gray-600">Loading positions...</p>
+            </div>
+        </div>
+        {% endif %}
+
+    </main>
+
+    <script>
+    // =============================================
+    // Dashboard JavaScript — fetches data and renders
+    // =============================================
+
+    const DARK_LAYOUT = {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { color: '#9ca3af', size: 11 },
+        margin: { t: 10, r: 20, b: 40, l: 50 },
+        xaxis: { gridcolor: '#1f2937' },
+        yaxis: { gridcolor: '#1f2937' },
+    };
+
+    // --- Load Yield Curve ---
+    async function loadCurve() {
+        try {
+            const res = await fetch('/api/curve/current');
+            const data = await res.json();
+            if (data.observed_yields) {
+                const labels = Object.keys(data.observed_yields);
+                const values = Object.values(data.observed_yields);
+
+                // Update 2s10s display
+                const spread = data.metrics?.spread_2s10s;
+                if (spread !== undefined) {
+                    const el = document.getElementById('spread-2s10s');
+                    el.textContent = spread.toFixed(2) + '%';
+                    el.className = 'text-lg font-semibold mt-1 ' + (spread < 0 ? 'text-red-400' : 'text-green-400');
+                }
+
+                Plotly.newPlot('curve-chart', [{
+                    x: labels,
+                    y: values,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#3b82f6', width: 2 },
+                    marker: { size: 5 },
+                }], {
+                    ...DARK_LAYOUT,
+                    yaxis: { ...DARK_LAYOUT.yaxis, title: 'Yield (%)' },
+                }, { responsive: true, displayModeBar: false });
+            }
+        } catch (e) {
+            document.getElementById('curve-chart').innerHTML = '<p class="text-gray-600 text-sm">Failed to load curve data</p>';
+        }
+    }
+
+    // --- Load Credit Spreads ---
+    async function loadSpreads() {
+        try {
+            const res = await fetch('/api/curve/spreads');
+            const data = await res.json();
+            if (data.spreads) {
+                const s = data.spreads;
+                document.getElementById('hy-oas-display').textContent = s.hy_oas.toFixed(2) + ' (z: ' + s.hy_z_score + ')';
+
+                Plotly.newPlot('spread-chart', [
+                    { x: ['IG OAS', 'HY OAS'], y: [s.ig_oas, s.hy_oas], type: 'bar', marker: { color: ['#3b82f6', '#ef4444'] } }
+                ], {
+                    ...DARK_LAYOUT,
+                    yaxis: { ...DARK_LAYOUT.yaxis, title: 'Spread (%)' },
+                }, { responsive: true, displayModeBar: false });
+            }
+        } catch (e) {
+            document.getElementById('spread-chart').innerHTML = '<p class="text-gray-600 text-sm">Failed to load spread data</p>';
+        }
+    }
+
+    // --- Load Regime ---
+    async function loadRegime() {
+        try {
+            const res = await fetch('/api/regime/current');
+            const data = await res.json();
+            const el = document.getElementById('regime-display');
+            if (data.regime) {
+                el.textContent = data.regime.replace('_', ' ').toUpperCase();
+                const colors = { risk_on: 'text-green-400', risk_off: 'text-yellow-400', crisis: 'text-red-400' };
+                el.className = 'text-lg font-semibold mt-1 ' + (colors[data.regime] || 'text-gray-300');
+            } else {
+                el.textContent = 'Error';
+                el.className = 'text-lg font-semibold mt-1 text-red-400';
+            }
+        } catch (e) {
+            document.getElementById('regime-display').textContent = 'Unavailable';
+        }
+    }
+
+    // --- Run Council ---
+    document.getElementById('btn-council').addEventListener('click', async function() {
+        const btn = this;
+        const output = document.getElementById('council-output');
+        btn.disabled = true;
+        btn.textContent = 'Running...';
+        output.innerHTML = '<p class="text-gray-500">Analyzing market conditions...</p>';
+
+        try {
+            const res = await fetch('/api/council/run', { method: 'POST' });
+            const data = await res.json();
+
+            if (data.council_result) {
+                const r = data.council_result;
+                const dirColor = r.direction === 'LONG' ? 'text-green-400' : r.direction === 'SHORT' ? 'text-red-400' : 'text-yellow-400';
+
+                document.getElementById('signal-display').textContent = r.direction;
+                document.getElementById('signal-display').className = 'text-lg font-semibold mt-1 ' + dirColor;
+
+                let html = `<div class="grid grid-cols-2 gap-4">`;
+                for (const [name, op] of Object.entries(r.opinions)) {
+                    const dc = op.direction === 'LONG' ? 'text-green-400' : op.direction === 'SHORT' ? 'text-red-400' : 'text-yellow-400';
+                    html += `
+                    <div class="bg-gray-800 rounded p-3">
+                        <p class="text-xs text-gray-500 uppercase">${name.replace('_', ' ')}</p>
+                        <p class="${dc} font-semibold">${op.direction} <span class="text-gray-500 font-normal">(${op.conviction})</span></p>
+                        <p class="text-xs text-gray-500 mt-1">${op.reasoning}</p>
+                    </div>`;
+                }
+                html += `</div>`;
+                html += `<div class="mt-3 p-3 bg-gray-800 rounded border border-gray-700">
+                    <span class="text-xs text-gray-500">FINAL:</span>
+                    <span class="${dirColor} font-bold ml-2">${r.direction}</span>
+                    <span class="text-gray-500 ml-2">conviction ${r.conviction}</span>
+                </div>`;
+                output.innerHTML = html;
+            } else {
+                output.innerHTML = `<p class="text-red-400">Error: ${JSON.stringify(data)}</p>`;
+            }
+        } catch (e) {
+            output.innerHTML = `<p class="text-red-400">Request failed: ${e.message}</p>`;
+        }
+        btn.disabled = false;
+        btn.textContent = 'Run Analysis';
+    });
+
+    // --- Run Backtest ---
+    const btnBacktest = document.getElementById('btn-backtest');
+    if (btnBacktest) {
+        btnBacktest.addEventListener('click', async function() {
+            const btn = this;
+            const strategy = document.getElementById('strategy-select').value;
+            const metrics = document.getElementById('backtest-metrics');
+            btn.disabled = true;
+            btn.textContent = 'Running...';
+            metrics.innerHTML = '<p class="text-gray-500">Running backtest...</p>';
+
+            try {
+                const res = await fetch('/api/backtest/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ strategy: strategy, lookback: 63, transaction_cost_bps: 5.0 })
+                });
+                const data = await res.json();
+
+                if (data.metrics) {
+                    const m = data.metrics;
+                    metrics.innerHTML = `
+                    <div class="grid grid-cols-6 gap-3">
+                        <div><p class="text-xs text-gray-500">Return</p><p class="font-semibold ${m.annual_return > 0 ? 'text-green-400' : 'text-red-400'}">${(m.annual_return * 100).toFixed(1)}%</p></div>
+                        <div><p class="text-xs text-gray-500">Sharpe</p><p class="font-semibold">${m.sharpe.toFixed(2)}</p></div>
+                        <div><p class="text-xs text-gray-500">Max DD</p><p class="font-semibold text-red-400">${(m.max_drawdown * 100).toFixed(1)}%</p></div>
+                        <div><p class="text-xs text-gray-500">Volatility</p><p class="font-semibold">${(m.annual_vol * 100).toFixed(1)}%</p></div>
+                        <div><p class="text-xs text-gray-500">Win Rate</p><p class="font-semibold">${(m.win_rate * 100).toFixed(1)}%</p></div>
+                        <div><p class="text-xs text-gray-500">Calmar</p><p class="font-semibold">${m.calmar.toFixed(2)}</p></div>
+                    </div>`;
+
+                    // Plot cumulative returns
+                    if (data.cumulative_returns) {
+                        const dates = data.cumulative_returns.map(d => d.date);
+                        const values = data.cumulative_returns.map(d => d.value);
+                        Plotly.newPlot('backtest-chart', [{
+                            x: dates, y: values, type: 'scatter', mode: 'lines',
+                            line: { color: '#3b82f6', width: 2 },
+                            fill: 'tozeroy', fillcolor: 'rgba(59,130,246,0.1)',
+                        }], {
+                            ...DARK_LAYOUT,
+                            yaxis: { ...DARK_LAYOUT.yaxis, title: 'Cumulative Return' },
+                        }, { responsive: true, displayModeBar: false });
+                    }
+                } else {
+                    metrics.innerHTML = `<p class="text-red-400">Error: ${data.detail || JSON.stringify(data)}</p>`;
+                }
+            } catch (e) {
+                metrics.innerHTML = `<p class="text-red-400">Request failed: ${e.message}</p>`;
+            }
+            btn.disabled = false;
+            btn.textContent = 'Run Backtest';
+        });
+    }
+
+    // --- Init: load all data on page load ---
+    loadCurve();
+    loadSpreads();
+    loadRegime();
+    </script>
+
+</body>
+</html>

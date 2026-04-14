@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} - Cross-Asset Signals{% endblock %}
+{% block page_title %}Cross-Asset Signals{% endblock %}
+
+{% block content %}
+
+<!-- Row 1: Primary signals (4 cards) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+    <!-- Credit-Equity Divergence -->
+    <div class="card-sm">
+        <div class="flex items-center justify-between">
+            <p class="text-xs uppercase tracking-wide" style="color:#71717a;">Credit-Equity Divergence</p>
+            <span class="info-tip">
+                <svg class="w-3.5 h-3.5" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                <span class="tip-content">Measures the gap between credit spreads and equity implied vol. Negative = credit pricing more risk than equities.</span>
+            </span>
+        </div>
+        <p id="card-credit-equity" class="metric" style="color:#52525b;">
+            <span class="skeleton" style="width:60px;height:24px;display:inline-block;"></span>
+        </p>
+        <p id="card-div-label" class="text-xs mt-1" style="color:#71717a;"></p>
+    </div>
+
+    <!-- Risk On/Off Score -->
+    <div class="card-sm">
+        <div class="flex items-center justify-between">
+            <p class="text-xs uppercase tracking-wide" style="color:#71717a;">Risk On/Off Score</p>
+            <span class="info-tip">
+                <svg class="w-3.5 h-3.5" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                <span class="tip-content">Composite score from credit, equity, vol, and momentum signals. Positive = risk-on, negative = risk-off.</span>
+            </span>
+        </div>
+        <p id="card-risk-score" class="metric" style="color:#52525b;">
+            <span class="skeleton" style="width:60px;height:24px;display:inline-block;"></span>
+        </p>
+    </div>
+
+    <!-- Current Regime -->
+    <div class="card-sm">
+        <div class="flex items-center justify-between">
+            <p class="text-xs uppercase tracking-wide" style="color:#71717a;">Current Regime</p>
+            <span class="info-tip">
+                <svg class="w-3.5 h-3.5" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                <span class="tip-content">Market regime classification based on cross-asset signals: risk-on, risk-off, neutral, or crisis.</span>
+            </span>
+        </div>
+        <p id="card-regime" class="metric" style="color:#52525b;">
+            <span class="skeleton" style="width:80px;height:24px;display:inline-block;"></span>
+        </p>
+    </div>
+
+    <!-- VIX Level -->
+    <div class="card-sm">
+        <div class="flex items-center justify-between">
+            <p class="text-xs uppercase tracking-wide" style="color:#71717a;">VIX Level</p>
+            <span class="info-tip">
+                <svg class="w-3.5 h-3.5" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                <span class="tip-content">CBOE Volatility Index. Below 18 = calm, 18-25 = elevated, above 25 = high fear.</span>
+            </span>
+        </div>
+        <p id="card-vix" class="metric" style="color:#52525b;">
+            <span class="skeleton" style="width:50px;height:24px;display:inline-block;"></span>
+        </p>
+    </div>
+</div>
+
+<!-- Row 2: Momentum indicators (2 cards) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+
+    <!-- Equity Momentum 21d -->
+    <div class="card-sm">
+        <div class="flex items-center justify-between">
+            <p class="text-xs uppercase tracking-wide" style="color:#71717a;">Equity Momentum 21d</p>
+            <span class="info-tip">
+                <svg class="w-3.5 h-3.5" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                <span class="tip-content">21-day equity return momentum. Positive indicates upward trend, negative indicates selling pressure.</span>
+            </span>
+        </div>
+        <p id="card-eq-mom" class="metric" style="color:#52525b;">
+            <span class="skeleton" style="width:60px;height:24px;display:inline-block;"></span>
+        </p>
+    </div>
+
+    <!-- HY Spread Change 21d -->
+    <div class="card-sm">
+        <div class="flex items-center justify-between">
+            <p class="text-xs uppercase tracking-wide" style="color:#71717a;">HY Spread Change 21d</p>
+            <span class="info-tip">
+                <svg class="w-3.5 h-3.5" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                <span class="tip-content">21-day change in high-yield credit spreads. Widening (positive) signals stress; tightening (negative) signals risk appetite.</span>
+            </span>
+        </div>
+        <p id="card-spread-chg" class="metric" style="color:#52525b;">
+            <span class="skeleton" style="width:60px;height:24px;display:inline-block;"></span>
+        </p>
+    </div>
+</div>
+
+<!-- Signal History Chart -->
+<div class="card mb-6">
+    <h2 class="text-xs font-semibold uppercase tracking-wide mb-4" style="color:#a1a1aa;">Risk On/Off Score History</h2>
+    <div id="signal-history-chart" style="width:100%;height:320px;"></div>
+</div>
+
+<!-- Signal Council History -->
+<div class="card">
+    <h2 class="text-xs font-semibold uppercase tracking-wide mb-4" style="color:#a1a1aa;">Signal Council History</h2>
+    <div id="council-history">
+        <div class="skeleton" style="width:100%;height:120px;border-radius:8px;"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// --- Load Cross-Asset Signals ---
+async function loadSignals() {
+    try {
+        const res = await fetch('/api/cross-asset/signals');
+        const data = await res.json();
+
+        // Credit-Equity Divergence
+        const ceDiv = data.credit_equity_divergence;
+        if (ceDiv !== undefined) {
+            const el = document.getElementById('card-credit-equity');
+            el.textContent = (typeof ceDiv === 'number') ? ceDiv.toFixed(3) : ceDiv;
+            el.className = 'metric ' + (ceDiv < -0.1 ? 'metric-negative' : ceDiv > 0.1 ? 'metric-positive' : '');
+            el.style.color = ceDiv < -0.1 ? '#ef4444' : ceDiv > 0.1 ? '#22c55e' : '#f59e0b';
+        }
+        if (data.divergence_label) {
+            document.getElementById('card-div-label').textContent = data.divergence_label;
+        }
+
+        // Risk On/Off Score
+        const risk = data.risk_on_off_score;
+        if (risk !== undefined) {
+            const el = document.getElementById('card-risk-score');
+            el.textContent = (typeof risk === 'number') ? risk.toFixed(3) : risk;
+            el.className = 'metric ' + (risk > 0.3 ? 'metric-positive' : risk < -0.3 ? 'metric-negative' : '');
+            el.style.color = risk > 0.3 ? '#22c55e' : risk < -0.3 ? '#ef4444' : '#f59e0b';
+        }
+
+        // Regime
+        if (data.regime) {
+            const el = document.getElementById('card-regime');
+            el.textContent = data.regime.replace(/_/g, ' ').toUpperCase();
+            const colors = { risk_on: '#22c55e', risk_off: '#f59e0b', crisis: '#ef4444', neutral: '#a1a1aa' };
+            el.className = 'metric';
+            el.style.color = colors[data.regime] || '#a1a1aa';
+        }
+
+        // VIX
+        if (data.vix !== undefined) {
+            const el = document.getElementById('card-vix');
+            el.textContent = (typeof data.vix === 'number') ? data.vix.toFixed(2) : data.vix;
+            el.className = 'metric ' + (data.vix > 25 ? 'metric-negative' : data.vix <= 18 ? 'metric-positive' : '');
+            el.style.color = data.vix > 25 ? '#ef4444' : data.vix > 18 ? '#f59e0b' : '#22c55e';
+        }
+
+        // Equity Momentum
+        if (data.equity_momentum_21d !== undefined) {
+            const el = document.getElementById('card-eq-mom');
+            const pct = (data.equity_momentum_21d * 100).toFixed(2);
+            el.textContent = pct + '%';
+            el.className = 'metric ' + (data.equity_momentum_21d >= 0 ? 'metric-positive' : 'metric-negative');
+            el.style.color = data.equity_momentum_21d >= 0 ? '#22c55e' : '#ef4444';
+        }
+
+        // HY Spread Change
+        if (data.hy_spread_change_21d !== undefined) {
+            const el = document.getElementById('card-spread-chg');
+            const pct = (data.hy_spread_change_21d * 100).toFixed(2);
+            el.textContent = pct + '%';
+            // Spread widening = bad, tightening = good
+            el.className = 'metric ' + (data.hy_spread_change_21d > 0 ? 'metric-negative' : 'metric-positive');
+            el.style.color = data.hy_spread_change_21d > 0 ? '#ef4444' : '#22c55e';
+        }
+    } catch (e) {
+        for (const id of ['card-credit-equity', 'card-risk-score', 'card-regime', 'card-vix']) {
+            const el = document.getElementById(id);
+            el.textContent = 'Failed to load';
+            el.className = 'metric metric-negative';
+            el.style.color = '#ef4444';
+        }
+    }
+}
+
+// --- Load Signal History ---
+async function loadHistory() {
+    try {
+        const res = await fetch('/api/cross-asset/history');
+        const data = await res.json();
+
+        if (data.history && data.history.length > 0) {
+            const dates = data.history.map(h => h.date || h.timestamp);
+            const scores = data.history.map(h => h.risk_on_off_score || h.score || 0);
+
+            // Create color band shapes
+            const shapes = [
+                { type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: 0.3, y1: 1.5, fillcolor: 'rgba(34,197,94,0.06)', line: { width: 0 } },
+                { type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: -0.3, y1: 0.3, fillcolor: 'rgba(234,179,8,0.06)', line: { width: 0 } },
+                { type: 'rect', xref: 'paper', yref: 'y', x0: 0, x1: 1, y0: -1.5, y1: -0.3, fillcolor: 'rgba(239,68,68,0.06)', line: { width: 0 } },
+            ];
+
+            Plotly.newPlot('signal-history-chart', [{
+                x: dates, y: scores,
+                type: 'scatter', mode: 'lines',
+                line: { color: '#3b82f6', width: 2 },
+                name: 'Risk On/Off Score',
+            }], {
+                ...DARK_LAYOUT,
+                shapes: shapes,
+                yaxis: { ...DARK_LAYOUT.yaxis, title: 'Score', range: [-1.2, 1.2] },
+            }, PLOTLY_CONFIG);
+        } else {
+            document.getElementById('signal-history-chart').innerHTML = '<p style="color:#71717a;" class="text-sm">No history data available</p>';
+        }
+    } catch (e) {
+        document.getElementById('signal-history-chart').innerHTML = '<p style="color:#ef4444;" class="text-sm">Failed to load signal history</p>';
+    }
+}
+
+// --- Load Council History ---
+async function loadCouncilHistory() {
+    try {
+        const res = await fetch('/api/council/history');
+        const data = await res.json();
+
+        if (data.decisions && data.decisions.length > 0) {
+            let html = '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr style="border-bottom:1px solid #27272a;">';
+            html += '<th class="text-left py-2 pr-4 font-medium" style="color:#71717a;">Timestamp</th>';
+            html += '<th class="text-left py-2 pr-4 font-medium" style="color:#71717a;">Direction</th>';
+            html += '<th class="text-left py-2 pr-4 font-medium" style="color:#71717a;">Conviction</th>';
+            html += '</tr></thead><tbody>';
+
+            for (const d of data.decisions) {
+                const dirColor = colorForDirection(d.direction);
+                const dirBadge = d.direction === 'LONG' ? 'badge-green'
+                    : d.direction === 'SHORT' ? 'badge-red' : 'badge-amber';
+                html += `<tr style="border-bottom:1px solid rgba(39,39,42,0.5);">
+                    <td class="py-2 pr-4" style="color:#a1a1aa;">${d.timestamp || '--'}</td>
+                    <td class="py-2 pr-4"><span class="${dirBadge}">${d.direction || '--'}</span></td>
+                    <td class="py-2 pr-4" style="color:#fafafa;">${d.conviction || '--'}</td>
+                </tr>`;
+            }
+            html += '</tbody></table></div>';
+            document.getElementById('council-history').innerHTML = html;
+        } else {
+            document.getElementById('council-history').innerHTML = '<div class="text-center py-8"><p style="color:#52525b;" class="text-sm">No council decisions recorded yet.</p></div>';
+        }
+    } catch (e) {
+        document.getElementById('council-history').innerHTML = '<p style="color:#ef4444;" class="text-sm">Failed to load council history</p>';
+    }
+}
+
+// --- Init ---
+loadSignals();
+loadHistory();
+loadCouncilHistory();
+</script>
+{% endblock %}

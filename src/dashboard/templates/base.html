@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaNet{% block title_suffix %}{% endblock %}</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Libs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+        /* ── Scrollbar ─────────────────────────────────────────── */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+        /* ── Plotly cleanup ────────────────────────────────────── */
+        .js-plotly-plot .plotly .modebar { display: none !important; }
+
+        /* ── Tabular numbers ───────────────────────────────────── */
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+
+        /* ── Cards ─────────────────────────────────────────────── */
+        .card {
+            background: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            padding: 20px;
+            transition: border-color 150ms ease;
+            overflow: visible;
+        }
+        .card:hover { border-color: #3f3f46; }
+
+        .card-sm {
+            background: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            padding: 16px;
+            transition: border-color 150ms ease;
+            overflow: visible;
+        }
+        .card-sm:hover { border-color: #3f3f46; }
+
+        /* ── Metric ────────────────────────────────────────────── */
+        .metric-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: #71717a;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+        .metric-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #fafafa;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+        }
+        .metric-positive .metric-value,
+        .metric-positive.metric-value { color: #22c55e; }
+        .metric-negative .metric-value,
+        .metric-negative.metric-value { color: #ef4444; }
+
+        /* Standalone metric classes (backward compat) */
+        .metric { font-size: 20px; font-weight: 600; color: #fafafa; font-variant-numeric: tabular-nums; }
+        .metric-positive { color: #22c55e; }
+        .metric-negative { color: #ef4444; }
+
+        /* ── Badges ────────────────────────────────────────────── */
+        .badge-green {
+            display: inline-flex; align-items: center;
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border-radius: 9999px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+        .badge-red {
+            display: inline-flex; align-items: center;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-radius: 9999px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+        .badge-amber {
+            display: inline-flex; align-items: center;
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border-radius: 9999px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+        .badge-blue {
+            display: inline-flex; align-items: center;
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border-radius: 9999px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 500;
+            line-height: 1.6;
+        }
+
+        /* ── Buttons ───────────────────────────────────────────── */
+        .btn-primary {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #fafafa;
+            color: #09090b;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: background 150ms ease;
+        }
+        .btn-primary:hover { background: #ffffff; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-secondary {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #27272a;
+            color: #d4d4d8;
+            border: 1px solid #3f3f46;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 150ms ease;
+        }
+        .btn-secondary:hover { background: #3f3f46; }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-ghost {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: transparent;
+            color: #71717a;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 150ms ease, background 150ms ease;
+        }
+        .btn-ghost:hover { color: #a1a1aa; background: #18181b; }
+
+        /* ── Skeleton loading ──────────────────────────────────── */
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #27272a 25%, #3f3f46 50%, #27272a 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 4px;
+        }
+
+        /* ── Info-tip / Tooltip ─────────────────────────────────── */
+        .info-tip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid #3f3f46;
+            color: #52525b;
+            font-size: 9px;
+            font-weight: 600;
+            cursor: help;
+            flex-shrink: 0;
+            margin-left: 4px;
+            vertical-align: middle;
+            line-height: 1;
+        }
+        .info-tip::before {
+            content: '?';
+        }
+        .info-tip .tip-content {
+            position: fixed;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: #d4d4d8;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.5;
+            max-width: 260px;
+            width: max-content;
+            white-space: normal;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 150ms ease;
+            z-index: 99999;
+            filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
+        }
+        /* Arrow removed — fixed positioning handles placement */
+        .info-tip:hover .tip-content { opacity: 1; visibility: visible; pointer-events: auto; }
+
+        /* data-tip attribute variant (no child element needed) */
+        .info-tip[data-tip]::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: #d4d4d8;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.5;
+            max-width: 240px;
+            width: max-content;
+            white-space: normal;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 150ms ease;
+            z-index: 100;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+        }
+        .info-tip[data-tip]:hover::after { opacity: 1; }
+
+        /* ── Live dot ──────────────────────────────────────────── */
+        @keyframes pulse-ring {
+            0%   { transform: scale(1);   opacity: 0.6; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+        .live-dot {
+            position: relative;
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #22c55e;
+            flex-shrink: 0;
+        }
+        .live-dot::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* ── Toast ─────────────────────────────────────────────── */
+        @keyframes toast-in  { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes toast-out { from { transform: translateY(0); opacity: 1; } to { transform: translateY(16px); opacity: 0; } }
+
+        #toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #d4d4d8;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 13px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            animation: toast-in 200ms ease forwards;
+            pointer-events: auto;
+        }
+        .toast.removing {
+            animation: toast-out 200ms ease forwards;
+        }
+
+        /* ── Section header ────────────────────────────────────── */
+        .section-header, .section-hdr {
+            font-size: 12px;
+            font-weight: 500;
+            color: #a1a1aa;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── Sidebar nav link ──────────────────────────────────── */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: color 150ms ease, background 150ms ease;
+            text-decoration: none;
+        }
+        .nav-item.active {
+            background: #27272a;
+            color: #ffffff;
+        }
+        .nav-item:not(.active) {
+            color: #71717a;
+        }
+        .nav-item:not(.active):hover {
+            color: #a1a1aa;
+            background: #18181b;
+        }
+
+        /* ── Cmd+K trigger ─────────────────────────────────────── */
+        .cmdk-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid #27272a;
+            background: #18181b;
+            color: #52525b;
+            font-size: 12px;
+            font-family: 'Inter', system-ui, sans-serif;
+            cursor: pointer;
+            transition: border-color 150ms ease;
+        }
+        .cmdk-trigger:hover { border-color: #3f3f46; color: #71717a; }
+        .cmdk-trigger kbd {
+            font-size: 10px;
+            font-family: inherit;
+            color: #3f3f46;
+        }
+
+        /* ── Fade in utility ───────────────────────────────────── */
+        .fade-in { animation: fadeIn 300ms ease forwards; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ── Divider ───────────────────────────────────────────── */
+        .divider { border: none; border-top: 1px solid #27272a; margin: 0; }
+    </style>
+</head>
+<body style="background:#09090b; color:#fafafa; margin:0; padding:0; min-height:100vh; display:flex; font-family:'Inter',system-ui,-apple-system,sans-serif;">
+
+    <!-- ═══ Sidebar ═══════════════════════════════════════════ -->
+    <aside style="width:240px; flex-shrink:0; background:#0f0f11; border-right:1px solid #1c1c1e; min-height:100vh; display:flex; flex-direction:column;">
+
+        <!-- Logo -->
+        <div style="padding:20px 20px 16px; border-bottom:1px solid #1c1c1e;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:16px; font-weight:700; color:#ffffff; letter-spacing:-0.01em;">AlphaNet</span>
+                <span style="font-size:10px; font-weight:500; color:#52525b; background:#18181b; border:1px solid #27272a; border-radius:4px; padding:1px 6px; line-height:1.6;">v0.1</span>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav style="flex:1; padding:12px; display:flex; flex-direction:column; gap:2px;">
+
+            <!-- Market Intelligence -->
+            <a href="/market" class="nav-item {% if page == 'market' %}active{% endif %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3v18h18"/>
+                    <path d="M7 16l4-5 4 3 5-6"/>
+                </svg>
+                Market Intelligence
+            </a>
+
+            <!-- Strategy Lab -->
+            <a href="/strategy" class="nav-item {% if page == 'strategy' %}active{% endif %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 3h6l3 7-6 11-6-11z"/>
+                    <path d="M9 3l1.5 7"/>
+                    <path d="M15 3l-1.5 7"/>
+                    <path d="M6 10h12"/>
+                </svg>
+                Strategy Lab
+            </a>
+
+            <!-- Cross-Asset Signals -->
+            <a href="/cross-asset" class="nav-item {% if page == 'cross-asset' %}active{% endif %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3v4m0 0H4m4 0l-5 5"/>
+                    <path d="M16 3v4m0 0h4m-4 0l5 5"/>
+                    <path d="M8 21v-4m0 0H4m4 0l-5-5"/>
+                    <path d="M16 21v-4m0 0h4m-4 0l5-5"/>
+                </svg>
+                Cross-Asset Signals
+            </a>
+
+            <!-- Fixed Income Tools -->
+            <a href="/fixed-income" class="nav-item {% if page == 'fixed-income' %}active{% endif %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M3 9h18"/>
+                    <path d="M3 15h18"/>
+                    <path d="M9 3v18"/>
+                    <path d="M15 3v18"/>
+                </svg>
+                Fixed Income Tools
+            </a>
+
+            <!-- Carry & Term Premium -->
+            <a href="/carry" class="nav-item {% if page == 'carry' %}active{% endif %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                Carry &amp; Term Premium
+            </a>
+
+            <!-- Correlation Regimes -->
+            <a href="/correlation" class="nav-item {% if page == 'correlation' %}active{% endif %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Correlation Regimes
+            </a>
+
+            <!-- Stress Testing -->
+            <a href="/stress" class="nav-item {% if page == 'stress' %}active{% endif %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                Stress Testing
+            </a>
+
+            <!-- Funding Stress -->
+            <a href="/funding" class="nav-item {% if page == 'funding' %}active{% endif %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                Funding Stress
+            </a>
+
+            <!-- Treasury Auctions -->
+            <a href="/auction" class="nav-item {% if page == 'auction' %}active{% endif %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                Treasury Auctions
+            </a>
+
+            <!-- Execution (paper_trade only) -->
+            {% if mode == 'paper_trade' %}
+            <a href="/execution" class="nav-item {% if page == 'execution' %}active{% endif %}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+                Execution
+            </a>
+            {% endif %}
+
+        </nav>
+
+        <!-- Sidebar footer -->
+        <div style="padding:16px 20px; border-top:1px solid #1c1c1e; display:flex; align-items:center; justify-content:space-between;">
+            <a href="/docs" style="font-size:12px; color:#52525b; text-decoration:none; transition:color 150ms;" onmouseover="this.style.color='#a1a1aa'" onmouseout="this.style.color='#52525b'">API Docs</a>
+            {% if mode == 'paper_trade' %}
+            <span class="badge-green">Paper</span>
+            {% else %}
+            <span class="badge-blue">{{ mode | default('analytics') | replace('_', ' ') | title }}</span>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- ═══ Main area ═════════════════════════════════════════ -->
+    <div style="flex:1; display:flex; flex-direction:column; min-height:100vh; overflow-x:hidden;">
+
+        <!-- Top header -->
+        <header style="height:48px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 24px; border-bottom:1px solid #1c1c1e; background:#09090b;">
+            <h2 style="font-size:14px; font-weight:600; color:#fafafa; margin:0;">{% block page_title %}Dashboard{% endblock %}</h2>
+            <div style="display:flex; align-items:center; gap:12px;">
+
+                <!-- Cmd+K search trigger -->
+                <button class="cmdk-trigger" type="button">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#52525b;">
+                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                    </svg>
+                    <span>Search</span>
+                    <kbd>&#8984;K</kbd>
+                </button>
+
+                <!-- Mode pill -->
+                {% if mode == 'paper_trade' %}
+                <span class="badge-green" style="font-size:11px; padding:3px 10px;">
+                    <span class="live-dot" style="margin-right:6px;"></span>
+                    Paper Trade
+                </span>
+                {% else %}
+                <span class="badge-blue" style="font-size:11px; padding:3px 10px;">
+                    {{ mode | default('analytics') | upper | replace('_', ' ') }}
+                </span>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <main style="flex:1; padding:24px; overflow-y:auto;">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container"></div>
+
+    <!-- ═══ Shared JS ═════════════════════════════════════════ -->
+    <script>
+    /* ── Plotly dark layout ──────────────────────────────────── */
+    const DARK_LAYOUT = {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor:  'transparent',
+        font: { color: '#52525b', size: 11, family: 'Inter, system-ui, sans-serif' },
+        margin: { t: 8, r: 12, b: 32, l: 44 },
+        xaxis: { gridcolor: '#1c1c1e', zerolinecolor: '#27272a', tickfont: { color: '#52525b' } },
+        yaxis: { gridcolor: '#1c1c1e', zerolinecolor: '#27272a', tickfont: { color: '#52525b' } },
+        legend: { font: { color: '#a1a1aa' }, bgcolor: 'transparent' },
+        colorway: ['#3b82f6','#22c55e','#f59e0b','#ef4444','#a78bfa','#ec4899','#06b6d4','#f97316'],
+    };
+
+    const PLOTLY_CONFIG = { responsive: true, displayModeBar: false };
+
+    /* ── Direction helpers ───────────────────────────────────── */
+    function colorForDirection(dir) {
+        if (dir === 'LONG')  return 'color:#22c55e';
+        if (dir === 'SHORT') return 'color:#ef4444';
+        return 'color:#f59e0b';
+    }
+
+    function bgForDirection(dir) {
+        if (dir === 'LONG')  return 'badge-green';
+        if (dir === 'SHORT') return 'badge-red';
+        return 'badge-amber';
+    }
+
+    /* ── Formatting helpers ─────────────────────────────────── */
+    function pctClass(val) {
+        return val >= 0 ? 'metric-positive' : 'metric-negative';
+    }
+
+    function formatPct(val) {
+        if (val == null || isNaN(val)) return '--';
+        const num = parseFloat(val);
+        const sign = num > 0 ? '+' : '';
+        return sign + num.toFixed(2) + '%';
+    }
+
+    /* ── Clear skeleton from chart containers before Plotly renders ── */
+    const origPlotlyNewPlot = Plotly.newPlot;
+    Plotly.newPlot = function(el, ...args) {
+        const container = typeof el === 'string' ? document.getElementById(el) : el;
+        if (container) {
+            const skeletons = container.querySelectorAll('.skeleton');
+            skeletons.forEach(s => s.remove());
+        }
+        return origPlotlyNewPlot.call(this, el, ...args);
+    };
+
+    /* ── Tooltip positioning (fixed) ──────────────────────────── */
+    document.addEventListener('mouseover', function(e) {
+        const tip = e.target.closest('.info-tip');
+        if (!tip) return;
+        const content = tip.querySelector('.tip-content');
+        if (!content) return;
+        const rect = tip.getBoundingClientRect();
+        content.style.left = Math.max(8, Math.min(rect.left + rect.width/2 - 130, window.innerWidth - 270)) + 'px';
+        content.style.top = (rect.top - content.offsetHeight - 10) + 'px';
+        // If tooltip goes above viewport, show below instead
+        if (rect.top - content.offsetHeight - 10 < 8) {
+            content.style.top = (rect.bottom + 10) + 'px';
+        }
+    });
+
+    /* ── Toast notifications ────────────────────────────────── */
+    function showToast(msg) {
+        const container = document.getElementById('toast-container');
+        const el = document.createElement('div');
+        el.className = 'toast';
+        el.textContent = msg;
+        container.appendChild(el);
+        setTimeout(() => {
+            el.classList.add('removing');
+            el.addEventListener('animationend', () => el.remove());
+        }, 3000);
+    }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

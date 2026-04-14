@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} - Stress Testing{% endblock %}
+{% block page_title %}Stress Testing{% endblock %}
+
+{% block content %}
+
+<!-- Portfolio Input -->
+<div class="card mb-6">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <p class="section-hdr" style="margin:0;">Portfolio Weights</p>
+        <span class="info-tip" data-tip="Define your portfolio allocation across major ETFs. Weights should sum to 100%. Use presets for common portfolios."></span>
+    </div>
+
+    <!-- Preset Buttons -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="setPreset('6040')">60/40</button>
+        <button class="btn-secondary" onclick="setPreset('riskparity')">Risk Parity</button>
+        <button class="btn-secondary" onclick="setPreset('allequity')">All Equity</button>
+        <button class="btn-secondary" onclick="setPreset('allbond')">All Bond</button>
+    </div>
+
+    <!-- Weight Inputs -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">SPY (%)</label>
+            <input id="w-SPY" type="number" value="60" min="0" max="100" step="5"
+                   class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                   style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">TLT (%)</label>
+            <input id="w-TLT" type="number" value="20" min="0" max="100" step="5"
+                   class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                   style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">IEF (%)</label>
+            <input id="w-IEF" type="number" value="10" min="0" max="100" step="5"
+                   class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                   style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">HYG (%)</label>
+            <input id="w-HYG" type="number" value="5" min="0" max="100" step="5"
+                   class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                   style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">LQD (%)</label>
+            <input id="w-LQD" type="number" value="5" min="0" max="100" step="5"
+                   class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                   style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">GLD (%)</label>
+            <input id="w-GLD" type="number" value="0" min="0" max="100" step="5"
+                   class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                   style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+        </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;">
+        <button id="btn-run-stress" class="btn-primary" onclick="runHistorical()">Run Stress Test</button>
+        <span id="weight-total" style="font-size:12px;color:#71717a;"></span>
+    </div>
+</div>
+
+<!-- Historical Scenarios Results -->
+<div class="card mb-6">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <p class="section-hdr" style="margin:0;">Historical Scenarios</p>
+        <span class="info-tip" data-tip="Portfolio P&L under historical stress events. Green bars indicate gains, red bars indicate losses. Click a row to see asset-level breakdown."></span>
+    </div>
+    <div id="stress-results">
+        <p style="color:#52525b;font-size:13px;">Configure portfolio weights and click "Run Stress Test" to see results.</p>
+    </div>
+</div>
+
+<!-- Custom Scenario -->
+<div class="card mb-6">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <p class="section-hdr" style="margin:0;">Custom Scenario</p>
+        <span class="info-tip" data-tip="Define a custom shock scenario with rate, spread, and equity moves."></span>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">Rate Shock (bps)</label>
+            <input id="custom-rate" type="number" value="100" step="25"
+                   class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                   style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">Spread Shock (bps)</label>
+            <input id="custom-spread" type="number" value="200" step="25"
+                   class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                   style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">Equity Shock (%)</label>
+            <input id="custom-equity" type="number" value="-20" step="5"
+                   class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                   style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+        </div>
+    </div>
+
+    <button class="btn-primary" onclick="runCustom()">Run Custom Scenario</button>
+
+    <div id="custom-results" style="margin-top:16px;"></div>
+</div>
+
+<!-- Scenario Breakdown -->
+<div class="card" id="breakdown-section" style="display:none;">
+    <p class="section-hdr" style="margin-bottom:12px;">Scenario Breakdown</p>
+    <div id="breakdown-content"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ASSETS = ['SPY', 'TLT', 'IEF', 'HYG', 'LQD', 'GLD'];
+
+function getWeights() {
+    const w = {};
+    let total = 0;
+    for (const a of ASSETS) {
+        const v = parseFloat(document.getElementById('w-' + a).value) || 0;
+        w[a] = v / 100;
+        total += v;
+    }
+    document.getElementById('weight-total').textContent = 'Total: ' + total.toFixed(0) + '%';
+    document.getElementById('weight-total').style.color = Math.abs(total - 100) < 0.1 ? '#22c55e' : '#ef4444';
+    return w;
+}
+
+function setPreset(name) {
+    const presets = {
+        '6040':      { SPY: 60, TLT: 20, IEF: 10, HYG: 5, LQD: 5, GLD: 0 },
+        'riskparity': { SPY: 25, TLT: 30, IEF: 20, HYG: 5, LQD: 10, GLD: 10 },
+        'allequity':  { SPY: 100, TLT: 0, IEF: 0, HYG: 0, LQD: 0, GLD: 0 },
+        'allbond':    { SPY: 0, TLT: 40, IEF: 30, HYG: 10, LQD: 20, GLD: 0 },
+    };
+    const p = presets[name];
+    if (!p) return;
+    for (const a of ASSETS) {
+        document.getElementById('w-' + a).value = p[a];
+    }
+    getWeights();
+}
+
+async function runHistorical() {
+    const weights = getWeights();
+    const btn = document.getElementById('btn-run-stress');
+    const output = document.getElementById('stress-results');
+    btn.disabled = true; btn.textContent = 'Running...';
+    output.innerHTML = '<div class="skeleton" style="height:14px;width:60%;margin-bottom:10px;"></div><div class="skeleton" style="height:14px;width:45%;"></div>';
+
+    try {
+        const res = await fetch('/api/stress/historical', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ weights }),
+        });
+        const data = await res.json();
+
+        if (data.scenarios && data.scenarios.length > 0) {
+            // Waterfall bar chart
+            const names = data.scenarios.map(s => s.scenario || s.name);
+            const pnls = data.scenarios.map(s => s.portfolio_pnl_pct);
+            const colors = pnls.map(v => v >= 0 ? '#22c55e' : '#ef4444');
+
+            let html = '<div id="stress-chart" style="width:100%;height:320px;margin-bottom:16px;"></div>';
+
+            // Table
+            html += '<div style="overflow-x:auto;"><table style="width:100%;font-size:13px;border-collapse:collapse;">';
+            html += '<thead><tr style="border-bottom:1px solid #27272a;">';
+            html += '<th style="text-align:left;padding:8px 8px 8px 0;font-size:11px;font-weight:500;color:#71717a;text-transform:uppercase;letter-spacing:.05em;">Scenario</th>';
+            html += '<th style="text-align:right;padding:8px;font-size:11px;font-weight:500;color:#71717a;">Portfolio P&L</th>';
+            html += '<th style="text-align:right;padding:8px;font-size:11px;font-weight:500;color:#71717a;">Worst Asset</th>';
+            html += '<th style="text-align:right;padding:8px 0 8px 8px;font-size:11px;font-weight:500;color:#71717a;">Description</th>';
+            html += '</tr></thead><tbody>';
+
+            for (let i = 0; i < data.scenarios.length; i++) {
+                const s = data.scenarios[i];
+                const scenarioName = s.scenario || s.name || '--';
+                const pnl = (s.portfolio_pnl_pct * 100).toFixed(2);
+                const pnlColor = s.portfolio_pnl_pct >= 0 ? '#22c55e' : '#ef4444';
+                const worst = s.worst_asset || '--';
+                const desc = s.description || '--';
+                html += '<tr style="border-bottom:1px solid rgba(39,39,42,.4);cursor:pointer;" onclick="showBreakdown(' + i + ')" onmouseover="this.style.background=\'#18181b\'" onmouseout="this.style.background=\'transparent\'">';
+                html += '<td style="padding:8px 8px 8px 0;color:#fafafa;">' + scenarioName + '</td>';
+                html += '<td style="text-align:right;padding:8px;color:' + pnlColor + ';font-weight:600;">' + (s.portfolio_pnl_pct >= 0 ? '+' : '') + pnl + '%</td>';
+                html += '<td style="text-align:right;padding:8px;color:#ef4444;">' + worst + '</td>';
+                html += '<td style="text-align:right;padding:8px 0 8px 8px;color:#71717a;font-size:12px;">' + desc + '</td>';
+                html += '</tr>';
+            }
+            html += '</tbody></table></div>';
+
+            output.innerHTML = html;
+            window._stressData = data.scenarios;
+
+            Plotly.newPlot('stress-chart', [{
+                x: names, y: pnls.map(v => v * 100),
+                type: 'bar',
+                marker: { color: colors },
+                text: pnls.map(v => (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%'),
+                textposition: 'outside',
+                textfont: { color: '#a1a1aa', size: 11 },
+            }], {
+                ...DARK_LAYOUT,
+                yaxis: { ...DARK_LAYOUT.yaxis, title: 'Portfolio P&L (%)' },
+                margin: { t: 30, r: 20, b: 100, l: 50 },
+                xaxis: { ...DARK_LAYOUT.xaxis, tickangle: -30 },
+            }, PLOTLY_CONFIG);
+        } else {
+            output.innerHTML = '<p style="color:#ef4444;font-size:13px;">No scenario data returned</p>';
+        }
+    } catch (e) {
+        output.innerHTML = '<p style="color:#ef4444;font-size:13px;">Stress test failed: ' + e.message + '</p>';
+    }
+
+    btn.disabled = false; btn.textContent = 'Run Stress Test';
+}
+
+function showBreakdown(idx) {
+    if (!window._stressData || !window._stressData[idx]) return;
+    const s = window._stressData[idx];
+    const section = document.getElementById('breakdown-section');
+    const content = document.getElementById('breakdown-content');
+    section.style.display = 'block';
+
+    const scenarioName = s.scenario || s.name || 'Scenario';
+    let html = '<p style="font-size:14px;font-weight:600;color:#fafafa;margin-bottom:12px;">' + scenarioName + '</p>';
+    html += '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">';
+
+    const breakdown = s.breakdown || [];
+    for (const item of breakdown) {
+        const contrib = item.contribution || 0;
+        const pnlPct = (contrib * 100).toFixed(2);
+        const c = contrib >= 0 ? '#22c55e' : '#ef4444';
+        const shock = item.shock !== undefined ? (item.shock * 100).toFixed(1) + '%' : '';
+        html += '<div class="card-sm">';
+        html += '<p style="font-size:11px;font-weight:500;color:#71717a;margin-bottom:4px;">' + (item.asset || '--') + '</p>';
+        html += '<p style="font-size:16px;font-weight:600;color:' + c + ';">' + (contrib >= 0 ? '+' : '') + pnlPct + '%</p>';
+        if (shock) html += '<p style="font-size:10px;color:#52525b;margin-top:2px;">shock: ' + shock + '</p>';
+        html += '</div>';
+    }
+    html += '</div>';
+    content.innerHTML = html;
+    section.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function runCustom() {
+    const weights = getWeights();
+    const output = document.getElementById('custom-results');
+    output.innerHTML = '<div class="skeleton" style="height:14px;width:60%;margin-bottom:10px;"></div>';
+
+    const rate = parseFloat(document.getElementById('custom-rate').value) || 0;
+    const spread = parseFloat(document.getElementById('custom-spread').value) || 0;
+    const equity = parseFloat(document.getElementById('custom-equity').value) || 0;
+
+    try {
+        const res = await fetch('/api/stress/custom', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                weights,
+                rate_shock_bps: rate,
+                spread_shock_bps: spread,
+                equity_shock_pct: equity,
+            }),
+        });
+        const data = await res.json();
+
+        if (data.portfolio_pnl_pct !== undefined) {
+            const pnl = (data.portfolio_pnl_pct * 100).toFixed(2);
+            const c = data.portfolio_pnl_pct >= 0 ? '#22c55e' : '#ef4444';
+
+            let html = '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 fade-in">';
+            html += '<div class="card-sm"><p style="font-size:11px;color:#71717a;margin-bottom:4px;">Portfolio P&L</p>';
+            html += '<p style="font-size:20px;font-weight:600;color:' + c + ';">' + (data.portfolio_pnl_pct >= 0 ? '+' : '') + pnl + '%</p></div>';
+
+            const bd = data.breakdown || [];
+            for (const item of bd) {
+                const contrib = item.contribution || 0;
+                const ac = contrib >= 0 ? '#22c55e' : '#ef4444';
+                html += '<div class="card-sm"><p style="font-size:11px;color:#71717a;margin-bottom:4px;">' + (item.asset || '--') + '</p>';
+                html += '<p style="font-size:16px;font-weight:600;color:' + ac + ';">' + (contrib >= 0 ? '+' : '') + (contrib * 100).toFixed(2) + '%</p></div>';
+            }
+            html += '</div>';
+            output.innerHTML = html;
+        }
+    } catch (e) {
+        output.innerHTML = '<p style="color:#ef4444;font-size:13px;">Custom scenario failed: ' + e.message + '</p>';
+    }
+}
+
+// Update weight total on input change
+for (const a of ASSETS) {
+    document.getElementById('w-' + a).addEventListener('input', getWeights);
+}
+getWeights();
+</script>
+{% endblock %}

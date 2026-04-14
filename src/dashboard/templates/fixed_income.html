@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+
+{% block title_suffix %} - Fixed Income Tools{% endblock %}
+{% block page_title %}Fixed Income Tools{% endblock %}
+
+{% block content %}
+
+<!-- Top Row: Bond Calculator + Yield Curve -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+    <!-- Bond Calculator -->
+    <div class="card">
+        <h2 class="text-xs font-semibold uppercase tracking-wide mb-4" style="color:#a1a1aa;">Bond Calculator</h2>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-xs mb-1" style="color:#71717a;">Face Value ($)</label>
+                <input id="bond-face" type="number" value="1000" min="100" step="100"
+                       class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                       style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+            </div>
+            <div>
+                <label class="block text-xs mb-1" style="color:#71717a;">Coupon Rate (%)</label>
+                <input id="bond-coupon" type="number" value="5.0" min="0" max="20" step="0.25"
+                       class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                       style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+            </div>
+            <div>
+                <label class="block text-xs mb-1" style="color:#71717a;">YTM (%)</label>
+                <input id="bond-ytm" type="number" value="4.5" min="0" max="30" step="0.25"
+                       class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                       style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+            </div>
+            <div>
+                <label class="block text-xs mb-1" style="color:#71717a;">Maturity (years)</label>
+                <input id="bond-maturity" type="number" value="10" min="1" max="30" step="1"
+                       class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+                       style="background:#09090b;border:1px solid #27272a;color:#fafafa;">
+            </div>
+        </div>
+        <button id="btn-calc-bond" class="btn-primary w-full mb-4">
+            Calculate
+        </button>
+
+        <!-- Bond Results -->
+        <div id="bond-results" class="hidden">
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="card-sm">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs" style="color:#71717a;">Price</p>
+                        <span class="info-tip">
+                            <svg class="w-3 h-3" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                            <span class="tip-content">Present value of all future cash flows discounted at the YTM.</span>
+                        </span>
+                    </div>
+                    <p id="bond-price" class="metric mt-1">--</p>
+                </div>
+                <div class="card-sm">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs" style="color:#71717a;">Modified Duration</p>
+                        <span class="info-tip">
+                            <svg class="w-3 h-3" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                            <span class="tip-content">Measures price sensitivity to a 1% change in yield. Higher = more sensitive.</span>
+                        </span>
+                    </div>
+                    <p id="bond-duration" class="metric mt-1">--</p>
+                </div>
+                <div class="card-sm">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs" style="color:#71717a;">Convexity</p>
+                        <span class="info-tip">
+                            <svg class="w-3 h-3" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                            <span class="tip-content">Second-order price sensitivity. Higher convexity means the bond benefits more from rate moves in either direction.</span>
+                        </span>
+                    </div>
+                    <p id="bond-convexity" class="metric mt-1">--</p>
+                </div>
+                <div class="card-sm">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs" style="color:#71717a;">DV01</p>
+                        <span class="info-tip">
+                            <svg class="w-3 h-3" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                            <span class="tip-content">Dollar value of a 1 basis point move. Shows the dollar P&amp;L impact of a 0.01% yield change.</span>
+                        </span>
+                    </div>
+                    <p id="bond-dv01" class="metric mt-1">--</p>
+                </div>
+            </div>
+
+            <!-- Price Sensitivity Table -->
+            <h3 class="text-xs uppercase tracking-wide mb-2" style="color:#71717a;">Price Sensitivity (bps change)</h3>
+            <div id="bond-sensitivity" class="overflow-x-auto"></div>
+        </div>
+    </div>
+
+    <!-- Yield Curve Analysis -->
+    <div class="card">
+        <h2 class="text-xs font-semibold uppercase tracking-wide mb-4" style="color:#a1a1aa;">Yield Curve Analysis</h2>
+        <div id="fi-curve-chart" style="width:100%;height:260px;" class="mb-4"></div>
+
+        <!-- Curve Metrics -->
+        <h3 class="text-xs uppercase tracking-wide mb-3" style="color:#71717a;">Curve Metrics</h3>
+        <div id="curve-metrics" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div class="card-sm">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs" style="color:#71717a;">Level</p>
+                    <span class="info-tip">
+                        <svg class="w-3 h-3" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <span class="tip-content">Average yield across the curve. Higher level = tighter monetary conditions.</span>
+                    </span>
+                </div>
+                <p id="cm-level" class="text-sm font-semibold mt-1" style="color:#fafafa;">--</p>
+            </div>
+            <div class="card-sm">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs" style="color:#71717a;">Slope</p>
+                    <span class="info-tip">
+                        <svg class="w-3 h-3" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <span class="tip-content">Difference between long and short rates. Positive = normal curve, negative = inverted.</span>
+                    </span>
+                </div>
+                <p id="cm-slope" class="text-sm font-semibold mt-1" style="color:#fafafa;">--</p>
+            </div>
+            <div class="card-sm">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs" style="color:#71717a;">Curvature</p>
+                    <span class="info-tip">
+                        <svg class="w-3 h-3" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <span class="tip-content">Butterfly spread measuring the belly vs wings. Signals butterfly trade opportunities.</span>
+                    </span>
+                </div>
+                <p id="cm-curvature" class="text-sm font-semibold mt-1" style="color:#fafafa;">--</p>
+            </div>
+            <div class="card-sm">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs" style="color:#71717a;">2s10s</p>
+                    <span class="info-tip">
+                        <svg class="w-3 h-3" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <span class="tip-content">10yr minus 2yr yield. Classic recession signal when negative (inverted).</span>
+                    </span>
+                </div>
+                <p id="cm-2s10s" class="text-sm font-semibold mt-1" style="color:#fafafa;">--</p>
+            </div>
+            <div class="card-sm">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs" style="color:#71717a;">3m10y</p>
+                    <span class="info-tip">
+                        <svg class="w-3 h-3" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <span class="tip-content">10yr minus 3-month yield. Fed's preferred recession predictor when inverted.</span>
+                    </span>
+                </div>
+                <p id="cm-3m10y" class="text-sm font-semibold mt-1" style="color:#fafafa;">--</p>
+            </div>
+            <div class="card-sm">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs" style="color:#71717a;">Inverted</p>
+                    <span class="info-tip">
+                        <svg class="w-3 h-3" style="color:#52525b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></svg>
+                        <span class="tip-content">Whether the yield curve is inverted (short rates above long rates).</span>
+                    </span>
+                </div>
+                <p id="cm-inverted" class="text-sm font-semibold mt-1" style="color:#fafafa;">--</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom: Curve Strategy Signals + ETF Reference -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Curve Strategy Signals -->
+    <div class="card">
+        <h2 class="text-xs font-semibold uppercase tracking-wide mb-4" style="color:#a1a1aa;">Curve Strategy Signals</h2>
+        <div id="curve-signals">
+            <div class="skeleton" style="width:100%;height:100px;border-radius:8px;"></div>
+        </div>
+    </div>
+
+    <!-- ETF Duration Reference -->
+    <div class="card">
+        <h2 class="text-xs font-semibold uppercase tracking-wide mb-4" style="color:#a1a1aa;">ETF Duration Reference</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr style="border-bottom:1px solid #27272a;">
+                        <th class="text-left py-2 font-medium" style="color:#71717a;">ETF</th>
+                        <th class="text-left py-2 font-medium" style="color:#71717a;">Duration (yrs)</th>
+                        <th class="text-left py-2 font-medium" style="color:#71717a;">Category</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom:1px solid rgba(39,39,42,0.5);">
+                        <td class="py-2" style="color:#fafafa;">SHY</td>
+                        <td class="py-2" style="color:#a1a1aa;">1.9</td>
+                        <td class="py-2" style="color:#71717a;">Short-term Treasury</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(39,39,42,0.5);">
+                        <td class="py-2" style="color:#fafafa;">IEI</td>
+                        <td class="py-2" style="color:#a1a1aa;">4.4</td>
+                        <td class="py-2" style="color:#71717a;">3-7yr Treasury</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(39,39,42,0.5);">
+                        <td class="py-2" style="color:#fafafa;">IEF</td>
+                        <td class="py-2" style="color:#a1a1aa;">7.5</td>
+                        <td class="py-2" style="color:#71717a;">7-10yr Treasury</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(39,39,42,0.5);">
+                        <td class="py-2" style="color:#fafafa;">TLT</td>
+                        <td class="py-2" style="color:#a1a1aa;">17.5</td>
+                        <td class="py-2" style="color:#71717a;">20+yr Treasury</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(39,39,42,0.5);">
+                        <td class="py-2" style="color:#fafafa;">LQD</td>
+                        <td class="py-2" style="color:#a1a1aa;">8.5</td>
+                        <td class="py-2" style="color:#71717a;">Investment Grade Corporate</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid rgba(39,39,42,0.5);">
+                        <td class="py-2" style="color:#fafafa;">HYG</td>
+                        <td class="py-2" style="color:#a1a1aa;">3.8</td>
+                        <td class="py-2" style="color:#71717a;">High Yield Corporate</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2" style="color:#fafafa;">AGG</td>
+                        <td class="py-2" style="color:#a1a1aa;">6.2</td>
+                        <td class="py-2" style="color:#71717a;">Aggregate Bond</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// --- Bond Calculator ---
+document.getElementById('btn-calc-bond').addEventListener('click', async function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Calculating...';
+    btn.style.opacity = '0.6';
+
+    const face = parseFloat(document.getElementById('bond-face').value) || 1000;
+    const coupon = parseFloat(document.getElementById('bond-coupon').value) || 5;
+    const ytm = parseFloat(document.getElementById('bond-ytm').value) || 4.5;
+    const maturity = parseInt(document.getElementById('bond-maturity').value) || 10;
+
+    try {
+        const res = await fetch('/api/fixed-income/bond-price', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ face_value: face, coupon_rate: coupon, ytm: ytm, maturity: maturity })
+        });
+        const data = await res.json();
+
+        document.getElementById('bond-results').classList.remove('hidden');
+        document.getElementById('bond-price').textContent = '$' + (data.price || 0).toFixed(2);
+        document.getElementById('bond-price').style.color = '#fafafa';
+        document.getElementById('bond-duration').textContent = (data.modified_duration || 0).toFixed(4);
+        document.getElementById('bond-duration').style.color = '#fafafa';
+        document.getElementById('bond-convexity').textContent = (data.convexity || 0).toFixed(4);
+        document.getElementById('bond-convexity').style.color = '#fafafa';
+        document.getElementById('bond-dv01').textContent = '$' + (data.dv01 || 0).toFixed(4);
+        document.getElementById('bond-dv01').style.color = '#fafafa';
+
+        // Price sensitivity table
+        const price = data.price || 0;
+        const dur = data.modified_duration || 0;
+        const conv = data.convexity || 0;
+        const bpsChanges = [-100, -50, -25, 25, 50, 100];
+
+        let html = '<table class="w-full text-sm"><thead><tr style="border-bottom:1px solid #27272a;">';
+        html += '<th class="text-left py-2 font-medium" style="color:#71717a;">Yield Change (bps)</th>';
+        html += '<th class="text-left py-2 font-medium" style="color:#71717a;">Est. Price Change ($)</th>';
+        html += '<th class="text-left py-2 font-medium" style="color:#71717a;">Est. New Price ($)</th>';
+        html += '</tr></thead><tbody>';
+
+        for (const bps of bpsChanges) {
+            const dy = bps / 10000;
+            const pctChange = -dur * dy + 0.5 * conv * dy * dy;
+            const dollarChange = price * pctChange;
+            const newPrice = price + dollarChange;
+            const changeColor = dollarChange >= 0 ? '#22c55e' : '#ef4444';
+            html += `<tr style="border-bottom:1px solid rgba(39,39,42,0.5);">
+                <td class="py-2" style="color:#fafafa;">${bps > 0 ? '+' : ''}${bps}</td>
+                <td class="py-2" style="color:${changeColor};">${dollarChange >= 0 ? '+' : ''}${dollarChange.toFixed(2)}</td>
+                <td class="py-2" style="color:#a1a1aa;">$${newPrice.toFixed(2)}</td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        document.getElementById('bond-sensitivity').innerHTML = html;
+
+    } catch (e) {
+        document.getElementById('bond-results').classList.remove('hidden');
+        document.getElementById('bond-price').textContent = 'Error';
+        document.getElementById('bond-price').className = 'metric metric-negative mt-1';
+        document.getElementById('bond-price').style.color = '#ef4444';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Calculate';
+    btn.style.opacity = '1';
+});
+
+// --- Load Yield Curve ---
+async function loadCurve() {
+    try {
+        const res = await fetch('/api/curve/current');
+        const data = await res.json();
+
+        if (data.observed_yields) {
+            const labels = Object.keys(data.observed_yields);
+            const observed = Object.values(data.observed_yields);
+
+            const traces = [{
+                x: labels, y: observed,
+                type: 'scatter', mode: 'lines+markers',
+                name: 'Observed',
+                line: { color: '#3b82f6', width: 2 },
+                marker: { size: 5 },
+            }];
+
+            if (data.fitted_yields) {
+                traces.push({
+                    x: labels, y: Object.values(data.fitted_yields),
+                    type: 'scatter', mode: 'lines',
+                    name: 'Fitted',
+                    line: { color: '#8b5cf6', width: 2, dash: 'dash' },
+                });
+            }
+
+            Plotly.newPlot('fi-curve-chart', traces, {
+                ...DARK_LAYOUT,
+                yaxis: { ...DARK_LAYOUT.yaxis, title: 'Yield (%)' },
+                showlegend: true,
+                legend: { ...DARK_LAYOUT.legend, x: 0, y: 1 },
+                margin: { t: 10, r: 20, b: 30, l: 50 },
+            }, PLOTLY_CONFIG);
+
+            // Populate metrics
+            const m = data.metrics || {};
+            if (m.level !== undefined) document.getElementById('cm-level').textContent = m.level.toFixed(3) + '%';
+            if (m.slope !== undefined) document.getElementById('cm-slope').textContent = m.slope.toFixed(3) + '%';
+            if (m.curvature !== undefined) document.getElementById('cm-curvature').textContent = m.curvature.toFixed(3);
+            if (m.spread_2s10s !== undefined) {
+                const el = document.getElementById('cm-2s10s');
+                el.textContent = m.spread_2s10s.toFixed(3) + '%';
+                el.style.color = m.spread_2s10s < 0 ? '#ef4444' : '#22c55e';
+            }
+            if (m.spread_3m10y !== undefined) {
+                const el = document.getElementById('cm-3m10y');
+                el.textContent = m.spread_3m10y.toFixed(3) + '%';
+                el.style.color = m.spread_3m10y < 0 ? '#ef4444' : '#22c55e';
+            }
+            if (m.inverted !== undefined) {
+                const el = document.getElementById('cm-inverted');
+                el.textContent = m.inverted ? 'YES' : 'NO';
+                el.style.color = m.inverted ? '#ef4444' : '#22c55e';
+            }
+        }
+    } catch (e) {
+        document.getElementById('fi-curve-chart').innerHTML = '<p style="color:#ef4444;" class="text-sm">Failed to load curve data</p>';
+    }
+}
+
+// --- Load Curve Strategy Signals ---
+async function loadCurveSignals() {
+    try {
+        const res = await fetch('/api/fixed-income/curve-signals');
+        const data = await res.json();
+
+        if (data.detail) throw new Error(data.detail);
+
+        let html = '<div class="space-y-4">';
+
+        // Flattener/Steepener signal
+        const fs = data.flattener_steepener;
+        if (fs) {
+            const signal = fs.signal || 'neutral';
+            const zScore = fs.z_score !== undefined ? fs.z_score.toFixed(2) : '--';
+            const sigColor = signal === 'flattener' ? '#f59e0b'
+                : signal === 'steepener' ? '#22c55e' : '#a1a1aa';
+            const sigBadge = signal === 'flattener' ? 'badge-amber'
+                : signal === 'steepener' ? 'badge-green' : 'badge-blue';
+            html += `<div class="card-sm">
+                <p class="text-xs uppercase tracking-wide" style="color:#71717a;">Curve Trade Signal</p>
+                <div class="flex items-center gap-3 mt-2">
+                    <span class="${sigBadge}">${signal.toUpperCase()}</span>
+                    <span class="text-xs" style="color:#71717a;">Z-Score: <span style="color:#a1a1aa;">${zScore}</span></span>
+                </div>
+            </div>`;
+        }
+
+        // IG/HY rotation weights with progress bars
+        const rot = data.ig_hy_rotation;
+        if (rot) {
+            const lqdPct = ((rot.lqd_weight || 0) * 100).toFixed(0);
+            const hygPct = ((rot.hyg_weight || 0) * 100).toFixed(0);
+            html += `<div class="card-sm">
+                <p class="text-xs uppercase tracking-wide mb-3" style="color:#71717a;">Credit Rotation Weights</p>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-medium" style="color:#a1a1aa;">LQD (IG)</span>
+                            <span class="text-xs font-semibold" style="color:#3b82f6;">${lqdPct}%</span>
+                        </div>
+                        <div class="w-full rounded-full" style="height:6px;background:#27272a;">
+                            <div class="rounded-full" style="height:6px;width:${lqdPct}%;background:#3b82f6;transition:width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-medium" style="color:#a1a1aa;">HYG (HY)</span>
+                            <span class="text-xs font-semibold" style="color:#ef4444;">${hygPct}%</span>
+                        </div>
+                        <div class="w-full rounded-full" style="height:6px;background:#27272a;">
+                            <div class="rounded-full" style="height:6px;width:${hygPct}%;background:#ef4444;transition:width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        html += '</div>';
+        document.getElementById('curve-signals').innerHTML = html;
+
+    } catch (e) {
+        document.getElementById('curve-signals').innerHTML = '<p style="color:#ef4444;" class="text-sm">Failed to load curve signals: ' + e.message + '</p>';
+    }
+}
+
+// --- Init ---
+loadCurve();
+loadCurveSignals();
+</script>
+{% endblock %}
