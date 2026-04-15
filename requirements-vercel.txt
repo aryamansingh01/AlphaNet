@@ -1,0 +1,23 @@
+# Vercel deployment — lightweight (no PyTorch/Transformers)
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+python-multipart==0.0.9
+jinja2==3.1.4
+yfinance==0.2.40
+fredapi==0.5.2
+praw==7.7.1
+finnhub-python==2.4.20
+pandas==2.2.2
+numpy==1.26.4
+scipy==1.13.1
+scikit-learn==1.5.1
+hmmlearn==0.3.2
+nelson-siegel-svensson==0.5.0
+cvxpy==1.5.2
+plotly==5.22.0
+alpaca-py==0.28.0
+sqlalchemy==2.0.31
+python-dotenv==1.0.1
+pydantic==2.8.0
+pydantic-settings==2.3.4
+httpx==0.27.0

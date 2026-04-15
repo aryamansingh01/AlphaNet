@@ -88,8 +88,15 @@ def _probe_yfinance() -> None:
         logger.info("yfinance probe: FAILED (error). Using synthetic data.")
 
 
-# Probe once at import
-_probe_yfinance()
+# Probe lazily on first data request (not at import — avoids Vercel cold start timeout)
+_probed = False
+
+
+def _ensure_probed():
+    global _probed
+    if not _probed:
+        _probe_yfinance()
+        _probed = True
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +121,8 @@ def _generate_synthetic(n: int = 504) -> dict:
 def fetch_market_data(period: str = "6mo", min_rows: int = 100) -> dict:
     """Fetch equity returns, VIX, and credit data. Cached for 5 min."""
     global _cache, _cache_ts, _yfinance_broken, _yfinance_broken_ts
+
+    _ensure_probed()
 
     cache_key = period
     now = time.monotonic()
