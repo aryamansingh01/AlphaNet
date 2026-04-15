@@ -1,5 +1,9 @@
 """AlphaNet -- Multi-Asset Investment Intelligence & Systematic Credit Platform."""
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
