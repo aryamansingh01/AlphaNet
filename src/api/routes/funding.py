@@ -17,10 +17,10 @@ _CACHE_TTL = 600  # 10 minutes
 
 def _get_monitor():
     """Lazily construct a FundingStressMonitor with a FredClient."""
-    from src.data.fixed_income.fred_client import FredClient
+    from src.api.routes._data_helper import get_fred_client
     from src.risk.funding_stress import FundingStressMonitor
 
-    return FundingStressMonitor(FredClient())
+    return FundingStressMonitor(get_fred_client())
 
 
 @router.get("/stress")

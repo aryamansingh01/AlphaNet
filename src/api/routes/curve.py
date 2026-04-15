@@ -27,8 +27,8 @@ def _fetch_treasury_yields() -> pd.Series:
         return _yield_cache["data"]
 
     try:
-        from src.data.fixed_income.fred_client import FredClient
-        client = FredClient()
+        from src.api.routes._data_helper import get_fred_client
+        client = get_fred_client()
         curve_df = client.get_treasury_curve()
         latest = curve_df.iloc[-1]
         _yield_cache["data"] = latest
@@ -51,8 +51,8 @@ def _fetch_credit_spreads() -> dict:
         return _spread_cache["data"]
 
     try:
-        from src.data.fixed_income.fred_client import FredClient
-        client = FredClient()
+        from src.api.routes._data_helper import get_fred_client
+        client = get_fred_client()
         spreads_df = client.get_credit_spreads()
         ig_series = spreads_df["IG_OAS"].dropna()
         hy_series = spreads_df["HY_OAS"].dropna()
@@ -134,8 +134,8 @@ async def credit_spreads():
 async def curve_history(days: int = 252):
     """Return curve metrics history."""
     try:
-        from src.data.fixed_income.fred_client import FredClient
-        client = FredClient()
+        from src.api.routes._data_helper import get_fred_client
+        client = get_fred_client()
         yield_df = client.get_treasury_curve()
         yield_df = yield_df.tail(days)
 

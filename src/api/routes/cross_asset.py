@@ -130,56 +130,64 @@ async def cross_asset_history(days: int = 252):
 
 _corr_tracker = CorrelationRegimeTracker()
 
+_etf_cache: dict = {}  # key -> data
+_etf_cache_ts: dict = {}  # key -> timestamp
+_ETF_CACHE_TTL = 300  # 5 minutes
+
 
 def _fetch_etf_returns(period: str = "2y") -> pd.DataFrame:
     """Fetch ETF returns for correlation analysis, with synthetic fallback."""
+    import time as _t
+    now = _t.monotonic()
+    cache_key = period
+    if cache_key in _etf_cache and (now - _etf_cache_ts.get(cache_key, 0)) < _ETF_CACHE_TTL:
+        return _etf_cache[cache_key]
+
     etfs = _corr_tracker.ASSET_ETFS
 
     if not _data_helper._yfinance_broken:
         try:
-            import os, sys, warnings
             import yfinance as yf
+            from src.api.routes._data_helper import suppress_yfinance
 
             tickers = list(etfs.values())
-            old_stderr = sys.stderr
-            sys.stderr = open(os.devnull, "w")
-            try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    data = yf.download(tickers, period=period, progress=False)
-                    if isinstance(data.columns, pd.MultiIndex):
-                        prices = data["Close"]
-                    else:
-                        prices = data[["Close"]]
-                        prices.columns = tickers
-            finally:
-                sys.stderr.close()
-                sys.stderr = old_stderr
+            with suppress_yfinance():
+                data = yf.download(tickers, period=period, progress=False)
+                if isinstance(data.columns, pd.MultiIndex):
+                    prices = data["Close"]
+                else:
+                    prices = data[["Close"]]
+                    prices.columns = tickers
 
             if not prices.empty and len(prices) >= 60:
                 returns = prices.pct_change().dropna()
                 if len(returns) >= 30:
+                    _etf_cache[cache_key] = returns
+                    _etf_cache_ts[cache_key] = now
                     return returns
         except Exception:
             logger.warning("yfinance ETF download failed, using synthetic data")
 
     # Synthetic fallback
-    np.random.seed(99)
+    rng = np.random.default_rng(99)
     n = 504
     dates = pd.bdate_range(end=datetime.now(), periods=n)
     synthetic = {}
     for name, ticker in etfs.items():
         if ticker in ("SPY", "QQQ"):
-            synthetic[ticker] = np.random.normal(0.0004, 0.012, n)
+            synthetic[ticker] = rng.normal(0.0004, 0.012, n)
         elif ticker in ("TLT", "IEF"):
-            synthetic[ticker] = np.random.normal(0.0001, 0.008, n)
+            synthetic[ticker] = rng.normal(0.0001, 0.008, n)
         elif ticker == "HYG":
-            synthetic[ticker] = np.random.normal(0.0002, 0.005, n)
+            synthetic[ticker] = rng.normal(0.0002, 0.005, n)
         elif ticker == "GLD":
-            synthetic[ticker] = np.random.normal(0.0003, 0.009, n)
+            synthetic[ticker] = rng.normal(0.0003, 0.009, n)
         else:
-            synthetic[ticker] = np.random.normal(0.0001, 0.004, n)
-    return pd.DataFrame(synthetic, index=dates)
+            synthetic[ticker] = rng.normal(0.0001, 0.004, n)
+    result_df = pd.DataFrame(synthetic, index=dates)
+    _etf_cache[cache_key] = result_df
+    _etf_cache_ts[cache_key] = now
+    return result_df
 
 
 @router.get("/correlations")

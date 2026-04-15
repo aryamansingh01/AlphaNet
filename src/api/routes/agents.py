@@ -31,6 +31,7 @@ def _append_decision(entry: dict) -> None:
     except (json.JSONDecodeError, FileNotFoundError):
         history = []
     history.append(entry)
+    history = history[-100:]
     path.write_text(json.dumps(history, indent=2, default=str))
 
 

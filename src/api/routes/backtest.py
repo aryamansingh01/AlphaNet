@@ -44,12 +44,12 @@ class CompareRequest(BaseModel):
 
 def _synthetic_credit_data(n: int, dates: pd.DatetimeIndex) -> dict:
     """Generate synthetic spread and curve data for credit strategies."""
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     return {
-        "hy_spread": pd.Series(np.random.normal(4.5, 0.5, n), index=dates).clip(lower=1),
-        "ig_spread": pd.Series(np.random.normal(1.2, 0.2, n), index=dates).clip(lower=0.3),
-        "curve_slope": pd.Series(np.random.normal(0.5, 0.3, n), index=dates),
-        "vix": pd.Series(np.random.normal(18, 3, n), index=dates).clip(lower=10),
+        "hy_spread": pd.Series(rng.normal(4.5, 0.5, n), index=dates).clip(lower=1),
+        "ig_spread": pd.Series(rng.normal(1.2, 0.2, n), index=dates).clip(lower=0.3),
+        "curve_slope": pd.Series(rng.normal(0.5, 0.3, n), index=dates),
+        "vix": pd.Series(rng.normal(18, 3, n), index=dates).clip(lower=10),
     }
 
 
@@ -122,8 +122,8 @@ def _ensure_cache() -> Path:
     return RESULTS_CACHE_PATH
 
 
-_price_cache: dict = {}
-_price_cache_ts: float = 0.0
+_price_cache: dict = {}  # key -> data
+_price_cache_ts: dict = {}  # key -> timestamp
 
 
 def _fetch_backtest_prices(tickers: list[str]) -> pd.DataFrame:
@@ -135,26 +135,19 @@ def _fetch_backtest_prices(tickers: list[str]) -> pd.DataFrame:
     now = _time.monotonic()
 
     # Return cached if fresh (5 min)
-    if cache_key in _price_cache and (now - _price_cache_ts) < 300:
+    if cache_key in _price_cache and (now - _price_cache_ts.get(cache_key, 0)) < 300:
         return _price_cache[cache_key]
 
     # Check if yfinance is working (shared flag from _data_helper)
-    from src.api.routes._data_helper import _yfinance_broken
+    from src.api.routes import _data_helper
+    from src.api.routes._data_helper import suppress_yfinance
 
-    if not _yfinance_broken:
+    if not _data_helper._yfinance_broken:
         try:
-            import os, sys, warnings
             import yfinance as yf
 
-            old_stderr = sys.stderr
-            sys.stderr = open(os.devnull, "w")
-            try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    data = yf.download(tickers, period="2y")
-            finally:
-                sys.stderr.close()
-                sys.stderr = old_stderr
+            with suppress_yfinance():
+                data = yf.download(tickers, period="2y")
 
             if not data.empty and len(data) >= 100:
                 if isinstance(data.columns, pd.MultiIndex):
@@ -168,13 +161,13 @@ def _fetch_backtest_prices(tickers: list[str]) -> pd.DataFrame:
                 prices = prices.dropna()
                 if len(prices) >= 100:
                     _price_cache[cache_key] = prices
-                    _price_cache_ts = now
+                    _price_cache_ts[cache_key] = now
                     return prices
         except Exception:
             pass
 
     # Synthetic fallback (instant, deterministic)
-    np.random.seed(42)
+    rng = np.random.default_rng(42)
     dates = pd.bdate_range(end=datetime.now(), periods=504)
     prices = pd.DataFrame(index=dates)
     base_params = {
@@ -185,10 +178,10 @@ def _fetch_backtest_prices(tickers: list[str]) -> pd.DataFrame:
     }
     for t in tickers:
         mu, sigma = base_params.get(t, (0.0003, 0.01))
-        prices[t] = 100 * np.exp(np.cumsum(np.random.normal(mu, sigma, 504)))
+        prices[t] = 100 * np.exp(np.cumsum(rng.normal(mu, sigma, 504)))
 
     _price_cache[cache_key] = prices
-    _price_cache_ts = now
+    _price_cache_ts[cache_key] = now
     return prices
 
 
@@ -229,6 +222,7 @@ async def run_backtest(request: BacktestRequest):
         except (json.JSONDecodeError, FileNotFoundError):
             cache = []
         cache.append(response)
+        cache = cache[-100:]
         path.write_text(json.dumps(cache, indent=2, default=str))
 
         return response

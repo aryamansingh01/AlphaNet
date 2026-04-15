@@ -76,9 +76,10 @@ async def stress_custom(req: CustomRequest):
 async def stress_scenarios():
     """List available historical stress scenarios."""
     try:
+        scenarios = _engine.list_scenarios()
         return {
-            "scenarios": _engine.list_scenarios(),
-            "count": len(_engine.list_scenarios()),
+            "scenarios": scenarios,
+            "count": len(scenarios),
             "timestamp": datetime.now().isoformat(),
         }
     except Exception as exc:

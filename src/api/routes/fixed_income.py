@@ -131,8 +131,8 @@ async def curve_signals():
 
         # --- Curve slope data ---
         try:
-            from src.data.fixed_income.fred_client import FredClient
-            client = FredClient()
+            from src.api.routes._data_helper import get_fred_client
+            client = get_fred_client()
             yield_df = client.get_treasury_curve()
             # 10y - 2y slope
             if "10Y" in yield_df.columns and "2Y" in yield_df.columns:
@@ -204,9 +204,9 @@ async def carry_rolldown():
     try:
         # Fetch treasury yields
         try:
-            from src.data.fixed_income.fred_client import FredClient
+            from src.api.routes._data_helper import get_fred_client
 
-            client = FredClient()
+            client = get_fred_client()
             curve_df = client.get_treasury_curve()
             latest = curve_df.iloc[-1]
             yields_dict = {label: float(latest[label]) for label in MATURITY_LABELS}
@@ -218,9 +218,9 @@ async def carry_rolldown():
         # Fetch SOFR rate
         sofr_rate = 5.3  # fallback default
         try:
-            from src.data.fixed_income.fred_client import FredClient
+            from src.api.routes._data_helper import get_fred_client
 
-            client = FredClient()
+            client = get_fred_client()
             sofr_series = client.get_series("SOFR")
             if sofr_series is not None and not sofr_series.empty:
                 sofr_rate = float(sofr_series.dropna().iloc[-1])
@@ -279,9 +279,9 @@ async def term_premium():
 
         # Fetch 10Y yield from FRED
         try:
-            from src.data.fixed_income.fred_client import FredClient
+            from src.api.routes._data_helper import get_fred_client
 
-            client = FredClient()
+            client = get_fred_client()
             ten_year = client.get_series("DGS10")
         except Exception as exc:
             logger.warning("FRED 10Y unavailable, using synthetic: %s", exc)

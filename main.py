@@ -45,17 +45,9 @@ if settings.mode == "paper_trade":
 # ---------------------------------------------------------------------------
 
 @app.get("/")
+@app.get("/market")
 async def page_market(request: Request):
     """Market Intelligence dashboard (default landing page)."""
-    return templates.TemplateResponse(
-        "market.html",
-        {"request": request, "mode": settings.mode, "page": "market"},
-    )
-
-
-@app.get("/market")
-async def page_market_explicit(request: Request):
-    """Market Intelligence dashboard (explicit path)."""
     return templates.TemplateResponse(
         "market.html",
         {"request": request, "mode": settings.mode, "page": "market"},

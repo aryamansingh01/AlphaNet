@@ -210,21 +210,14 @@ class MertonModel:
             return self._sample_or_default(ticker)
 
         try:
-            import os, sys, warnings
             import yfinance as yf
+            from src.api.routes._data_helper import suppress_yfinance
 
-            old_stderr = sys.stderr
-            sys.stderr = open(os.devnull, "w")
-            try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    tk = yf.Ticker(ticker)
-                    info = tk.info
-                    hist = tk.history(period="1y")
-                    bs = tk.balance_sheet
-            finally:
-                sys.stderr.close()
-                sys.stderr = old_stderr
+            with suppress_yfinance():
+                tk = yf.Ticker(ticker)
+                info = tk.info
+                hist = tk.history(period="1y")
+                bs = tk.balance_sheet
 
             if hist.empty or len(hist) < 60:
                 return self._sample_or_default(ticker)
